@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace ApiPlatform\Core\EventListener;
 
@@ -51,20 +51,24 @@ final class ReadListener
     public function onKernelRequest(GetResponseEvent $event)
     {
         $request = $event->getRequest();
-        if (
-            !($attributes = RequestAttributesExtractor::extractAttributes($request))
-            || !$attributes['receive']
-        ) {
+
+        $isNotApiRequest = function () use ($request) {
+
+            /** $attributes must have ['item_operation_name', 'collection_operation_name', 'subresource_operation_name'] */
+            return !($attributes = RequestAttributesExtractor::extractAttributes($request)) || !$attributes['receive'];
+        };
+
+        if ($isNotApiRequest()) {
             return;
         }
 
-        $data = [];
+        $attributes = RequestAttributesExtractor::extractAttributes($request);
 
         if (isset($attributes['item_operation_name'])) {
             $data = $this->getItemData($request, $attributes);
         } elseif (isset($attributes['collection_operation_name'])) {
             $data = $this->getCollectionData($request, $attributes);
-        } elseif (isset($attributes['subresource_operation_name'])) {
+        } else {
             $data = $this->getSubresourceData($request, $attributes);
         }
 
@@ -75,7 +79,7 @@ final class ReadListener
      * Retrieves data for a collection operation.
      *
      * @param Request $request
-     * @param array   $attributes
+     * @param array $attributes
      *
      * @return array|\Traversable|null
      */
@@ -92,7 +96,7 @@ final class ReadListener
      * Gets data for an item operation.
      *
      * @param Request $request
-     * @param array   $attributes
+     * @param array $attributes
      *
      * @throws NotFoundHttpException
      *
@@ -119,7 +123,7 @@ final class ReadListener
      * Gets data for a nested operation.
      *
      * @param Request $request
-     * @param array   $attributes
+     * @param array $attributes
      *
      * @throws NotFoundHttpException
      * @throws RuntimeException

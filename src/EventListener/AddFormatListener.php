@@ -28,8 +28,26 @@ final class AddFormatListener
 {
     private $negotiator;
     private $formats;
+
+    /**
+     * @example $mimeTypes
+     * <code>
+     * $mimeTypes = [
+     *     'application/json' => 'json',
+     *     'application/x-json' => 'json',
+     * ]
+     * </code>
+     */
     private $mimeTypes;
 
+    /**
+     * @param Negotiator $negotiator
+     * @param array $formats
+     * @example $formats
+     * <code>
+     * ['json' => ['application/json']]
+     * </code>
+     */
     public function __construct(Negotiator $negotiator, array $formats)
     {
         $this->negotiator = $negotiator;
@@ -47,18 +65,46 @@ final class AddFormatListener
     public function onKernelRequest(GetResponseEvent $event)
     {
         $request = $event->getRequest();
-        if (!$request->attributes->has('_api_resource_class') && !$request->attributes->has('_api_respond')) {
+
+        $isNotApiRequest = function() use ($request) {
+            return  !$request->attributes->has('_api_resource_class') && !$request->attributes->has('_api_respond');
+        };
+
+        if ($isNotApiRequest()) {
             return;
         }
 
-        $this->populateMimeTypes();
-        $this->addRequestFormats($request, $this->formats);
+        /** Populate mimeTypes */
+        ($populateMineTypes = function() {
+            if (null !== $this->mimeTypes) {
+                return;
+            }
+
+            $this->mimeTypes = [];
+            foreach ($this->formats as $format => $mimeTypes) {
+                foreach ($mimeTypes as $mimeType) {
+                    $this->mimeTypes[$mimeType] = $format;
+                }
+            }
+        })();
+
+        /** Adds API formats to the HttpFoundation Request. */
+        ($addRequestFormats = function() use ($request) {
+
+            foreach ($this->formats as $format => $mimeTypes) {
+                $request->setFormat($format, $mimeTypes);
+            }
+        })();
 
         // Empty strings must be converted to null because the Symfony router doesn't support parameter typing before 3.2 (_format)
-        if (null === $routeFormat = $request->attributes->get('_format') ?: null) {
-            $mimeTypes = array_keys($this->mimeTypes);
-        } elseif (!isset($this->formats[$routeFormat])) {
+        $routeFormat = $request->attributes->get('_format') ?: null;
+
+        if(is_string($routeFormat) && !isset($this->formats[$routeFormat])) {
             throw new NotFoundHttpException(sprintf('Format "%s" is not supported', $routeFormat));
+        }
+
+        if (is_null($routeFormat)) {
+            $mimeTypes = array_keys($this->mimeTypes);
         } else {
             $mimeTypes = Request::getMimeTypes($routeFormat);
         }
@@ -95,35 +141,6 @@ final class AddFormatListener
         }
     }
 
-    /**
-     * Adds API formats to the HttpFoundation Request.
-     *
-     * @param Request $request
-     * @param array   $formats
-     */
-    private function addRequestFormats(Request $request, array $formats)
-    {
-        foreach ($formats as $format => $mimeTypes) {
-            $request->setFormat($format, $mimeTypes);
-        }
-    }
-
-    /**
-     * Populates the $mimeTypes property.
-     */
-    private function populateMimeTypes()
-    {
-        if (null !== $this->mimeTypes) {
-            return;
-        }
-
-        $this->mimeTypes = [];
-        foreach ($this->formats as $format => $mimeTypes) {
-            foreach ($mimeTypes as $mimeType) {
-                $this->mimeTypes[$mimeType] = $format;
-            }
-        }
-    }
 
     /**
      * Retrieves an instance of NotAcceptableHttpException.

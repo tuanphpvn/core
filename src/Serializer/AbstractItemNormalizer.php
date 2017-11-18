@@ -186,10 +186,16 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
         }
 
         if (null !== $className = $type->getClassName()) {
+
+            $childContext = $this->createChildContext($context, $attribute);
+            unset($childContext['cache_key']); // Don't use parent's cache_key
+            if(is_array($value) && isset($value['id'])) { // update case
+                $childContext['api_allow_update'] = true;
+            }
             $this->setValue(
                 $object,
                 $attribute,
-                $this->denormalizeRelation($attribute, $propertyMetadata, $className, $value, $format, $this->createChildContext($context, $attribute))
+                $this->denormalizeRelation($attribute, $propertyMetadata, $className, $value, $format, $childContext)
             );
 
             return;
@@ -251,15 +257,38 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
         $collectionKeyType = $type->getCollectionKeyType();
         $collectionKeyBuiltinType = null === $collectionKeyType ? null : $collectionKeyType->getBuiltinType();
 
-        $values = [];
+        $arrKeyInvalid = [];
         foreach ($value as $index => $obj) {
             if (null !== $collectionKeyBuiltinType && !call_user_func('is_'.$collectionKeyBuiltinType, $index)) {
-                throw new InvalidArgumentException(sprintf(
-                        'The type of the key "%s" must be "%s", "%s" given.',
-                        $index, $collectionKeyBuiltinType, gettype($index))
-                );
+                $arrKeyInvalid[] = $index;
             }
+        }
 
+        if (!empty($arrKeyInvalid)) { /** Try again if array is acceptable */
+            $childContext = $context;
+            $childContext['resource_class'] = $className;
+            $arrChildOption = $this->getFactoryOptions($childContext);
+            $objChildPropertyNameCollection = $this->propertyNameCollectionFactory->create($className, $arrChildOption);
+
+            if(count(array_intersect($arrKeyInvalid, $objChildPropertyNameCollection->getIterator()->getArrayCopy())) === count($arrKeyInvalid)) {
+                $value = [$value];
+
+                // arr key not invalid anymore
+                $arrKeyInvalid = [];
+            }
+        }
+
+        if(!empty($arrKeyInvalid)) {
+            throw new InvalidArgumentException(sprintf(
+                    'The type of the key(s) "%s" must be "%s", "%s" given.',
+                    implode(", ", $arrKeyInvalid), $collectionKeyBuiltinType, implode(",", array_map(
+                        function($type) { return gettype($type); }, $arrKeyInvalid)
+                ))
+            );
+        }
+
+        $values = [];
+        foreach ($value as $index => $obj) {
             $values[$index] = $this->denormalizeRelation($attribute, $propertyMetadata, $className, $obj, $format, $this->createChildContext($context, $attribute));
         }
 

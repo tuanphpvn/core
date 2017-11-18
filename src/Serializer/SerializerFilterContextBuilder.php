@@ -51,12 +51,7 @@ final class SerializerFilterContextBuilder implements SerializerContextBuilderIn
         $resourceMetadata = $this->resourceMetadataFactory->create($attributes['resource_class']);
 
         if (isset($attributes['collection_operation_name']) || isset($attributes['subresource_operation_name'])) {
-            $resourceFilters = $resourceMetadata->getCollectionOperationAttribute(
-                $attributes['collection_operation_name'] ?? $attributes['subresource_operation_name'],
-                'filters',
-                [],
-                true
-            );
+            $resourceFilters = $resourceMetadata->getCollectionOperationAttribute( $attributes['collection_operation_name'] ?? $attributes['subresource_operation_name'], 'filters', [], true );
         } else {
             $resourceFilters = $resourceMetadata->getItemOperationAttribute($attributes['item_operation_name'], 'filters', [], true);
         }

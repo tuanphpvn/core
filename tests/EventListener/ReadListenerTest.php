@@ -20,7 +20,7 @@ use ApiPlatform\Core\EventListener\ReadListener;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 
-/**
+/**`
  * @author Kévin Dunglas <dunglas@gmail.com>
  */
 class ReadListenerTest extends \PHPUnit_Framework_TestCase
@@ -54,7 +54,7 @@ class ReadListenerTest extends \PHPUnit_Framework_TestCase
         $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
         $subresourceDataProvider->getSubresource()->shouldNotBeCalled();
 
-        $request = new Request([], [], ['data' => new \stdClass(), '_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post', '_api_receive' => false]);
+        $request = new Request($_query = [], $_request = [], $_attrs = ['data' => new \stdClass(), '_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post', '_api_receive' => false]);
         $request->setMethod('PUT');
 
         $event = $this->prophesize(GetResponseEvent::class);
@@ -75,7 +75,7 @@ class ReadListenerTest extends \PHPUnit_Framework_TestCase
         $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
         $subresourceDataProvider->getSubresource()->shouldNotBeCalled();
 
-        $request = new Request([], [], ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post', '_api_format' => 'json', '_api_mime_type' => 'application/json'], [], [], [], '{}');
+        $request = new Request($_query = [], $_request = [], $_attrs = ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post', '_api_format' => 'json', '_api_mime_type' => 'application/json'], $_cookies = [], $_files= [], $_server = [], $_content = '{}');
         $request->setMethod(Request::METHOD_POST);
 
         $event = $this->prophesize(GetResponseEvent::class);
@@ -99,7 +99,7 @@ class ReadListenerTest extends \PHPUnit_Framework_TestCase
         $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
         $subresourceDataProvider->getSubresource()->shouldNotBeCalled();
 
-        $request = new Request([], [], ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json']);
+        $request = new Request($_query = [], $_request = [], $_atrrs = ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json']);
         $request->setMethod(Request::METHOD_GET);
 
         $event = $this->prophesize(GetResponseEvent::class);
@@ -123,7 +123,7 @@ class ReadListenerTest extends \PHPUnit_Framework_TestCase
         $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
         $subresourceDataProvider->getSubresource()->shouldNotBeCalled();
 
-        $request = new Request([], [], ['id' => 1, '_api_resource_class' => 'Foo', '_api_item_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json']);
+        $request = new Request($_query = [], $_request = [], $_attrs =['id' => 1, '_api_resource_class' => 'Foo', '_api_item_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json']);
         $request->setMethod(Request::METHOD_GET);
 
         $event = $this->prophesize(GetResponseEvent::class);
@@ -145,9 +145,14 @@ class ReadListenerTest extends \PHPUnit_Framework_TestCase
 
         $data = [new \stdClass()];
         $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
-        $subresourceDataProvider->getSubresource('Foo', ['id' => 1], ['identifiers' => [['id', 'Bar', true]], 'property' => 'bar'], 'get')->willReturn($data)->shouldBeCalled();
+        $subresourceDataProvider->getSubresource(
+            $_resourceClass = 'Foo',
+            $_identifiers = ['id' => 1],
+            $_context = ['identifiers' => [['id', 'Bar', true]], 'property' => 'bar'],
+            $_operationName = 'get'
+        )->willReturn($data)->shouldBeCalled();
 
-        $request = new Request([], [], ['id' => 1, '_api_resource_class' => 'Foo', '_api_subresource_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json', '_api_subresource_context' => ['identifiers' => [['id', 'Bar', true]], 'property' => 'bar']]);
+        $request = new Request($_query = [], $_request = [], $_attrs = ['id' => 1, '_api_resource_class' => 'Foo', '_api_subresource_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json', '_api_subresource_context' => ['identifiers' => [['id', 'Bar', true]], 'property' => 'bar']]);
         $request->setMethod(Request::METHOD_GET);
 
         $event = $this->prophesize(GetResponseEvent::class);

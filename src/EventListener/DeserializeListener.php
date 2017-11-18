@@ -46,30 +46,43 @@ final class DeserializeListener
     public function onKernelRequest(GetResponseEvent $event)
     {
         $request = $event->getRequest();
-        if (
-            $request->isMethodSafe(false)
+
+        $isNotAllowDeserializer = function() use ($request) {
+            return $request->isMethodSafe(false)
             || $request->isMethod(Request::METHOD_DELETE)
             || !($attributes = RequestAttributesExtractor::extractAttributes($request))
             || !$attributes['receive']
-            || ('' === ($requestContent = $request->getContent()) && $request->isMethod(Request::METHOD_PUT))
-        ) {
+            || ('' === ($request->getContent()) && $request->isMethod(Request::METHOD_PUT));
+        };
+
+        if ($isNotAllowDeserializer()) {
             return;
         }
 
-        $format = $this->getFormat($request);
-        $context = $this->serializerContextBuilder->createFromRequest($request, false, $attributes);
+        $setDataForRequest = function() use ($request) {
+            $attributes = RequestAttributesExtractor::extractAttributes($request);
+            $requestContent = $request->getContent();
 
-        $data = $request->attributes->get('data');
-        if (null !== $data) {
-            $context['object_to_populate'] = $data;
-        }
+            $format = $this->getFormat($request);
+            $context = $this->serializerContextBuilder->createFromRequest($request, false, $attributes);
 
-        $request->attributes->set(
-            'data',
-            $this->serializer->deserialize(
+            $data = $request->attributes->get('data');
+
+
+            if (null !== $data) {
+                $context['object_to_populate'] = $data;
+            }
+
+            $deserializeData = $this->serializer->deserialize(
                 $requestContent, $attributes['resource_class'], $format, $context
-            )
-        );
+            );
+
+            $request->attributes->set(  'data', $deserializeData);
+        };
+
+        $setDataForRequest();
+
+
     }
 
     /**
@@ -89,7 +102,12 @@ final class DeserializeListener
         }
 
         $format = $request->getFormat($contentType);
-        if (null === $format || !isset($this->formats[$format])) {
+
+        if(isset($this->formats[$format])) {
+            return $format;
+        }
+
+        $throwException = function() use ($contentType) {
             $supportedMimeTypes = [];
             foreach ($this->formats as $mimeTypes) {
                 foreach ($mimeTypes as $mimeType) {
@@ -102,8 +120,8 @@ final class DeserializeListener
                 $contentType,
                 implode('", "', $supportedMimeTypes)
             ));
-        }
+        };
 
-        return $format;
+        $throwException();
     }
 }

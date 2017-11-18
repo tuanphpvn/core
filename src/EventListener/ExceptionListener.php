@@ -26,13 +26,15 @@ final class ExceptionListener extends BaseExceptionListener
 {
     public function onKernelException(GetResponseForExceptionEvent $event)
     {
-        $request = $event->getRequest();
         // Normalize exceptions only for routes managed by API Platform
-        if (
-            'html' === $request->getRequestFormat('') ||
-            (!$request->attributes->has('_api_resource_class') && !$request->attributes->has('_api_respond'))
-        ) {
-            return;
+        $isNotApiRequest = function() use ($event) {
+            $request = $event->getRequest();
+            return 'html' === $request->getRequestFormat('') || (!$request->attributes->has('_api_resource_class') && !$request->attributes->has('_api_respond'));
+
+        };
+
+        if($isNotApiRequest()) {
+            return ;
         }
 
         parent::onKernelException($event);

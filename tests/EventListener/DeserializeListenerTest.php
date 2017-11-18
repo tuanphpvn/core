@@ -21,6 +21,8 @@ use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\Serializer\SerializerInterface;
 
 /**
+ * Convert request content to Entity
+ *
  * @author Kévin Dunglas <dunglas@gmail.com>
  */
 class DeserializeListenerTest extends \PHPUnit_Framework_TestCase
@@ -31,7 +33,7 @@ class DeserializeListenerTest extends \PHPUnit_Framework_TestCase
     {
         $eventProphecy = $this->prophesize(GetResponseEvent::class);
 
-        $request = new Request([], [], ['data' => new \stdClass()]);
+        $request = new Request($_query = [], $_request = [], $_attrs = ['data' => new \stdClass()]);
         $request->setMethod(Request::METHOD_GET);
         $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
 
@@ -49,7 +51,7 @@ class DeserializeListenerTest extends \PHPUnit_Framework_TestCase
     {
         $eventProphecy = $this->prophesize(GetResponseEvent::class);
 
-        $request = new Request([], [], ['data' => new \stdClass(), '_api_resource_class' => 'Foo', '_api_item_operation_name' => 'put'], [], [], [], '');
+        $request = new Request($_query = [], $_request = [], $_attrs = ['data' => new \stdClass(), '_api_resource_class' => 'Foo', '_api_item_operation_name' => 'put'], [], [], [], '');
         $request->setMethod(Request::METHOD_PUT);
         $request->headers->set('Content-Type', 'application/json');
         $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
@@ -68,7 +70,7 @@ class DeserializeListenerTest extends \PHPUnit_Framework_TestCase
     {
         $eventProphecy = $this->prophesize(GetResponseEvent::class);
 
-        $request = new Request([], [], ['data' => new \stdClass()], [], [], [], '{}');
+        $request = new Request($_query = [], $_request = [], $_attrs = ['data' => new \stdClass()], [], [], [], '{}');
         $request->setMethod(Request::METHOD_POST);
         $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
 
@@ -86,7 +88,7 @@ class DeserializeListenerTest extends \PHPUnit_Framework_TestCase
     {
         $eventProphecy = $this->prophesize(GetResponseEvent::class);
 
-        $request = new Request([], [], ['data' => new \stdClass(), '_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post', '_api_receive' => false]);
+        $request = new Request($_query = [], $_request = [], $_attrs = ['data' => new \stdClass(), '_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post', '_api_receive' => false]);
         $request->setMethod(Request::METHOD_POST);
         $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
 
@@ -108,7 +110,7 @@ class DeserializeListenerTest extends \PHPUnit_Framework_TestCase
         $result = $populateObject ? new \stdClass() : null;
         $eventProphecy = $this->prophesize(GetResponseEvent::class);
 
-        $request = new Request([], [], ['data' => $result, '_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post'], [], [], [], '{}');
+        $request = new Request($_query = [], $_request = [], $_attrs = ['data' => $result, '_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post'], $_cookies = [], $_files = [], $_server = [], $_content = '{}');
         $request->setMethod($method);
         $request->headers->set('Content-Type', 'application/json');
         $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
@@ -133,7 +135,7 @@ class DeserializeListenerTest extends \PHPUnit_Framework_TestCase
     {
         $eventProphecy = $this->prophesize(GetResponseEvent::class);
 
-        $request = new Request([], [], ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post'], [], [], [], '{}');
+        $request = new Request($_query = [], $_request = [], $_attrs = ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post'], $_cookies = [], $_files = [], $_server = [], $_content = '{}');
         $request->setMethod(Request::METHOD_POST);
         $request->headers->set('Content-Type', 'text/xml');
         $request->setFormat('xml', 'text/xml'); // Workaround to avoid weird behaviors
@@ -161,7 +163,7 @@ class DeserializeListenerTest extends \PHPUnit_Framework_TestCase
     {
         $eventProphecy = $this->prophesize(GetResponseEvent::class);
 
-        $request = new Request([], [], ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post'], [], [], [], '{}');
+        $request = new Request($_query = [], $_request = [], $_attrs = ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post'], $_cookies= [], $_files = [], $_server = [], $_content = '{}');
         $request->setMethod(Request::METHOD_POST);
         $request->headers->set('Content-Type', 'application/rdf+xml');
         $request->setRequestFormat('xml');
@@ -189,7 +191,7 @@ class DeserializeListenerTest extends \PHPUnit_Framework_TestCase
     {
         $eventProphecy = $this->prophesize(GetResponseEvent::class);
 
-        $request = new Request([], [], ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post'], [], [], [], '{}');
+        $request = new Request($_query = [], $_request = [], $_attrs = ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post'], $_cookies = [], $_files = [], $_server = [], $_content = '{}');
         $request->setMethod(Request::METHOD_POST);
         $request->setRequestFormat('unknown');
         $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();

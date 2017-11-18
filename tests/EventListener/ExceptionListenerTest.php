@@ -39,7 +39,7 @@ class ExceptionListenerTest extends \PHPUnit_Framework_TestCase
         $eventProphecy->getKernel()->willReturn($kernel)->shouldBeCalled();
         $eventProphecy->setResponse(Argument::type(Response::class))->shouldBeCalled();
 
-        $listener = new ExceptionListener('foo:bar');
+        $listener = new ExceptionListener($_controller = 'foo:bar');
         $listener->onKernelException($eventProphecy->reveal());
     }
 
@@ -62,7 +62,7 @@ class ExceptionListenerTest extends \PHPUnit_Framework_TestCase
 
     public function testDoNothingWhenHtmlRequested()
     {
-        $request = new Request([], [], ['_api_respond' => true]);
+        $request = new Request($_query = [], $_request = [], $_attrs = ['_api_respond' => true]);
         $request->setRequestFormat('html');
 
         $eventProphecy = $this->prophesize(GetResponseForExceptionEvent::class);

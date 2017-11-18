@@ -41,25 +41,24 @@ final class RequestAttributesExtractor
     {
         $result = ['resource_class' => $request->attributes->get('_api_resource_class')];
 
-        if ($subresourceContext = $request->attributes->get('_api_subresource_context')) {
-            $result['subresource_context'] = $subresourceContext;
-        }
-
         if (null === $result['resource_class']) {
             return [];
         }
 
-        $hasRequestAttributeKey = false;
-        foreach (OperationType::TYPES as $operationType) {
-            $attribute = "_api_{$operationType}_operation_name";
-            if ($request->attributes->has($attribute)) {
-                $result["{$operationType}_operation_name"] = $request->attributes->get($attribute);
-                $hasRequestAttributeKey = true;
-                break;
-            }
-        }
+        $isHaveOperation = ($prepareOperationTypeInfo = function () use ($request, &$result) {
+            foreach (OperationType::TYPES as $operationType) {
+                $attribute = "_api_{$operationType}_operation_name";
+                if ($request->attributes->has($attribute)) {
+                    $result["{$operationType}_operation_name"] = $request->attributes->get($attribute);
 
-        if (false === $hasRequestAttributeKey) {
+                    return true;
+                }
+            }
+
+            return false;
+        })();
+
+        if(!$isHaveOperation) {
             return [];
         }
 
@@ -67,6 +66,10 @@ final class RequestAttributesExtractor
             $result['receive'] = true;
         } else {
             $result['receive'] = (bool) $apiRequest;
+        }
+
+        if ($subresourceContext = $request->attributes->get('_api_subresource_context')) {
+            $result['subresource_context'] = $subresourceContext;
         }
 
         return $result;
