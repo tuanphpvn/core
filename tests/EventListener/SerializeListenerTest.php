@@ -46,7 +46,7 @@ class SerializeListenerTest extends \PHPUnit_Framework_TestCase
         $listener->onKernelView($eventProphecy->reveal());
     }
 
-    public function testDoNotSerializeWhenFormatNotSet()
+    public function testDoNotSerializeWhenApiInfoNotSet()
     {
         $serializerProphecy = $this->prophesize(SerializerInterface::class);
         $serializerProphecy->serialize()->shouldNotBeCalled();
@@ -110,7 +110,7 @@ class SerializeListenerTest extends \PHPUnit_Framework_TestCase
             return $context === $expectedContext;
         }))->willReturn('bar')->shouldBeCalled();
 
-        $request = new Request([], [], ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'get']);
+        $request = new Request($_query = [], $_request = [], $_attrs = ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'get']);
         $request->setRequestFormat('xml');
 
         $eventProphecy = $this->prophesize(GetResponseForControllerResultEvent::class);
@@ -135,7 +135,7 @@ class SerializeListenerTest extends \PHPUnit_Framework_TestCase
             return $context === $expectedContext;
         }))->willReturn('bar')->shouldBeCalled();
 
-        $request = new Request([], [], ['_api_resource_class' => 'Foo', '_api_item_operation_name' => 'get']);
+        $request = new Request($_query = [], $_request = [], $_attrs = ['_api_resource_class' => 'Foo', '_api_item_operation_name' => 'get']);
         $request->setRequestFormat('xml');
 
         $eventProphecy = $this->prophesize(GetResponseForControllerResultEvent::class);
@@ -157,7 +157,7 @@ class SerializeListenerTest extends \PHPUnit_Framework_TestCase
         $serializerProphecy->encode(Argument::any(), 'xml')->willReturn('bar')->shouldBeCalled();
         $serializerProphecy->serialize()->shouldNotBeCalled();
 
-        $request = new Request([], [], ['_api_respond' => true]);
+        $request = new Request($_query = [], $_request = [], $_attrs = ['_api_respond' => true]);
         $request->setRequestFormat('xml');
 
         $eventProphecy = $this->prophesize(GetResponseForControllerResultEvent::class);

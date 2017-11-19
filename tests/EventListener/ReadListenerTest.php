@@ -172,11 +172,11 @@ class ReadListenerTest extends \PHPUnit_Framework_TestCase
         $collectionDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
 
         $itemDataProvider = $this->prophesize(ItemDataProviderInterface::class);
-        $itemDataProvider->getItem('Foo', 22, 'get')->willReturn(null)->shouldBeCalled();
+        $itemDataProvider->getItem($_resourceClass = 'Foo', $_id = 22, $_operationName = 'get')->willReturn(null)->shouldBeCalled();
 
         $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
 
-        $request = new Request([], [], ['id' => 22, '_api_resource_class' => 'Foo', '_api_item_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json']);
+        $request = new Request($_query = [], $_request = [], $_attrs = ['id' => 22, '_api_resource_class' => 'Foo', '_api_item_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json']);
         $request->setMethod(Request::METHOD_GET);
 
         $event = $this->prophesize(GetResponseEvent::class);

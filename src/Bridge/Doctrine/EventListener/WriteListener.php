@@ -39,20 +39,39 @@ final class WriteListener
      */
     public function onKernelView(GetResponseForControllerResultEvent $event)
     {
+        $isNotProcess = function() use ($event) {
+
+            $request = $event->getRequest();
+            if ($request->isMethodSafe(false)) {
+                return true;
+            }
+
+            $resourceClass = $request->attributes->get('_api_resource_class');
+            if (null === $resourceClass) {
+                return true;
+            }
+
+            $objectManager = $this->managerRegistry->getManagerForClass($resourceClass);
+            if (null === $objectManager) {
+                return true;
+            }
+
+            $controllerResult = $event->getControllerResult();
+
+            if(!is_object($controllerResult)) {
+                return true;
+            }
+        };
+
+        if($isNotProcess())
+        {
+            return;
+        }
+
         $request = $event->getRequest();
-        if ($request->isMethodSafe(false)) {
-            return;
-        }
-
-        $resourceClass = $request->attributes->get('_api_resource_class');
-        if (null === $resourceClass) {
-            return;
-        }
-
         $controllerResult = $event->getControllerResult();
-        if (null === $objectManager = $this->getManager($resourceClass, $controllerResult)) {
-            return;
-        }
+        $resourceClass = $request->attributes->get('_api_resource_class');
+        $objectManager = $this->managerRegistry->getManagerForClass($resourceClass);
 
         switch ($request->getMethod()) {
             case Request::METHOD_POST:
@@ -65,23 +84,5 @@ final class WriteListener
         }
 
         $objectManager->flush();
-    }
-
-    /**
-     * Gets the manager if applicable.
-     *
-     * @param string $resourceClass
-     * @param mixed  $data
-     *
-     * @return ObjectManager|null
-     */
-    private function getManager(string $resourceClass, $data)
-    {
-        $objectManager = $this->managerRegistry->getManagerForClass($resourceClass);
-        if (null === $objectManager || !is_object($data)) {
-            return null;
-        }
-
-        return $objectManager;
     }
 }

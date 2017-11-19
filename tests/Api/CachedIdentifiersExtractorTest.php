@@ -55,7 +55,7 @@ class CachedIdentifiersExtractorTest extends \PHPUnit_Framework_TestCase
         $key = 'iri_identifiers'.md5(Dummy::class);
 
         $cacheItem = $this->prophesize(CacheItemInterface::class);
-        $cacheItem->isHit()->shouldBeCalled()->willReturn(true);
+        $cacheItem->isHit()->shouldBeCalled()->willReturn(true); // Diff here
         $cacheItem->get()->shouldBeCalled()->willReturn(['id']);
 
         $cacheItemPool = $this->prophesize(CacheItemPoolInterface::class);
@@ -65,7 +65,7 @@ class CachedIdentifiersExtractorTest extends \PHPUnit_Framework_TestCase
         $dummy->setId(1);
 
         $decoration = $this->prophesize(IdentifiersExtractorInterface::class);
-        $decoration->getIdentifiersFromItem($dummy)->shouldNotBeCalled();
+        $decoration->getIdentifiersFromItem($dummy)->shouldNotBeCalled(); // Diff here
 
         $identifiersExtractor = new CachedIdentifiersExtractor($cacheItemPool->reveal(), $decoration->reveal(), null);
 

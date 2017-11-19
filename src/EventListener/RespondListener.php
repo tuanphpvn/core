@@ -39,7 +39,11 @@ final class RespondListener
         $controllerResult = $event->getControllerResult();
         $request = $event->getRequest();
 
-        if ($controllerResult instanceof Response || !$request->attributes->get('_api_respond')) {
+        $isNotApiRequest = function() use ($request, $controllerResult) {
+            return $controllerResult instanceof Response || !$request->attributes->get('_api_respond');
+        };
+
+        if($isNotApiRequest()) {
             return;
         }
 
