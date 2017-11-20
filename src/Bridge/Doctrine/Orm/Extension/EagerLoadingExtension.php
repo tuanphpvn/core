@@ -142,7 +142,7 @@ final class EagerLoadingExtension implements QueryCollectionExtensionInterface, 
             }
 
             try {
-                $propertyMetadata = $this->propertyMetadataFactory->create($resourceClass, $association, $propertyMetadataOptions);
+                $propertyMetadata = $this->propertyMetadataFactory->create($resourceClass, /** $property */$association, /** $options[] */$propertyMetadataOptions);
             } catch (PropertyNotFoundException $propertyNotFoundException) {
                 //skip properties not found
                 continue;
