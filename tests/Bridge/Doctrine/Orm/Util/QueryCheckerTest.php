@@ -26,153 +26,252 @@ class QueryCheckerTest extends \PHPUnit_Framework_TestCase
 {
     public function testHasHavingClauseWithHavingClause()
     {
-        $queryBuilder = $this->prophesize(QueryBuilder::class);
-        $queryBuilder->getDQLPart('having')->willReturn(['having' => 'toto']);
-        $this->assertTrue(QueryChecker::hasHavingClause($queryBuilder->reveal()));
+        $createQueryBuilder = function() {
+            $queryBuilder = $this->prophesize(QueryBuilder::class);
+            $queryBuilder->getDQLPart('having')->willReturn(['having' => 'toto']);
+
+            return $queryBuilder->reveal();
+        };
+
+        $this->assertTrue(QueryChecker::hasHavingClause($createQueryBuilder()));
     }
 
     public function testHasHavingClauseWithEmptyHavingClause()
     {
-        $queryBuilder = $this->prophesize(QueryBuilder::class);
-        $queryBuilder->getDQLPart('having')->willReturn([]);
-        $this->assertFalse(QueryChecker::hasHavingClause($queryBuilder->reveal()));
+        $createQueryBuilder = function() {
+            $queryBuilder = $this->prophesize(QueryBuilder::class);
+            $queryBuilder->getDQLPart('having')->willReturn([]);
+
+            return $queryBuilder->reveal();
+        };
+
+        $this->assertFalse(QueryChecker::hasHavingClause($createQueryBuilder()));
     }
 
     public function testHasMaxResult()
     {
-        $queryBuilder = $this->prophesize(QueryBuilder::class);
-        $queryBuilder->getMaxResults()->willReturn(10);
-        $this->assertTrue(QueryChecker::hasMaxResults($queryBuilder->reveal()));
+        $createQueryBuilder = function() {
+            $queryBuilder = $this->prophesize(QueryBuilder::class);
+            $queryBuilder->getMaxResults()->willReturn(10);
+
+            return $queryBuilder->reveal();
+        };
+
+        $this->assertTrue(QueryChecker::hasMaxResults($createQueryBuilder()));
     }
 
     public function testHasMaxResultWithNoMaxResult()
     {
-        $queryBuilder = $this->prophesize(QueryBuilder::class);
-        $queryBuilder->getMaxResults()->willReturn(null);
-        $this->assertFalse(QueryChecker::hasMaxResults($queryBuilder->reveal()));
+        $createQueryBuilder = function() {
+            $queryBuilder = $this->prophesize(QueryBuilder::class);
+            $queryBuilder->getMaxResults()->willReturn(null);
+
+            return $queryBuilder->reveal();
+        };
+
+        $this->assertFalse(QueryChecker::hasMaxResults($createQueryBuilder()));
     }
 
     public function testHasRootEntityWithCompositeIdentifier()
     {
-        $queryBuilder = $this->prophesize(QueryBuilder::class);
-        $queryBuilder->getRootEntities()->willReturn(['Dummy']);
-        $queryBuilder->getRootAliases()->willReturn(['d']);
-        $classMetadata = new ClassMetadata('Dummy');
-        $classMetadata->containsForeignIdentifier = true;
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata);
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
-        $this->assertTrue(QueryChecker::hasRootEntityWithCompositeIdentifier($queryBuilder->reveal(), $managerRegistry->reveal()));
+        $createQueryBuilder = function() {
+            $queryBuilder = $this->prophesize(QueryBuilder::class);
+            $queryBuilder->getRootEntities()->willReturn(['Dummy']);
+            $queryBuilder->getRootAliases()->willReturn(['d']);
+
+            return $queryBuilder->reveal();
+        };
+
+        $createManagerRegistry = function() {
+            $classMetadata = new ClassMetadata('Dummy');
+            $classMetadata->containsForeignIdentifier = true;
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata);
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+
+        $this->assertTrue(QueryChecker::hasRootEntityWithCompositeIdentifier($createQueryBuilder(), $createManagerRegistry()));
     }
 
     public function testHasRootEntityWithNoCompositeIdentifier()
     {
-        $queryBuilder = $this->prophesize(QueryBuilder::class);
-        $queryBuilder->getRootEntities()->willReturn(['Dummy']);
-        $queryBuilder->getRootAliases()->willReturn(['d']);
-        $classMetadata = new ClassMetadata('Dummy');
-        $classMetadata->containsForeignIdentifier = false;
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata);
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
-        $this->assertFalse(QueryChecker::hasRootEntityWithCompositeIdentifier($queryBuilder->reveal(), $managerRegistry->reveal()));
+        $createQueryBuilder = function() {
+            $queryBuilder = $this->prophesize(QueryBuilder::class);
+            $queryBuilder->getRootEntities()->willReturn(['Dummy']);
+            $queryBuilder->getRootAliases()->willReturn(['d']);
+
+            return $queryBuilder->reveal();
+        };
+
+        $createMangerRegistry = function() {
+            $classMetadata = new ClassMetadata('Dummy');
+            $classMetadata->containsForeignIdentifier = false;
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata);
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+        $this->assertFalse(QueryChecker::hasRootEntityWithCompositeIdentifier($createQueryBuilder(), $createMangerRegistry()));
     }
 
     public function testHasRootEntityWithForeignKeyIdentifier()
     {
-        $queryBuilder = $this->prophesize(QueryBuilder::class);
-        $queryBuilder->getRootEntities()->willReturn(['Dummy']);
-        $queryBuilder->getRootAliases()->willReturn(['d']);
-        $classMetadata = new ClassMetadata('Dummy');
-        $classMetadata->setIdentifier(['id', 'name']);
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata);
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
-        $this->assertTrue(QueryChecker::hasRootEntityWithForeignKeyIdentifier($queryBuilder->reveal(), $managerRegistry->reveal()));
+        $createQueryBuilder = function() {
+            $queryBuilder = $this->prophesize(QueryBuilder::class);
+            $queryBuilder->getRootEntities()->willReturn(['Dummy']);
+            $queryBuilder->getRootAliases()->willReturn(['d']);
+
+            return $queryBuilder->reveal();
+        };
+
+        $createManagerRegistry = function() {
+            $classMetadata = new ClassMetadata('Dummy');
+            $classMetadata->setIdentifier(['id', 'name']);
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata);
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+        $this->assertTrue(QueryChecker::hasRootEntityWithForeignKeyIdentifier($createQueryBuilder(), $createManagerRegistry()));
     }
 
     public function testHasRootEntityWithNoForeignKeyIdentifier()
     {
-        $queryBuilder = $this->prophesize(QueryBuilder::class);
-        $queryBuilder->getRootEntities()->willReturn(['Dummy']);
-        $queryBuilder->getRootAliases()->willReturn(['d']);
-        $classMetadata = new ClassMetadata('Dummy');
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata);
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
-        $this->assertFalse(QueryChecker::hasRootEntityWithForeignKeyIdentifier($queryBuilder->reveal(), $managerRegistry->reveal()));
+        $createQueryBuilder = function() {
+            $queryBuilder = $this->prophesize(QueryBuilder::class);
+            $queryBuilder->getRootEntities()->willReturn(['Dummy']);
+            $queryBuilder->getRootAliases()->willReturn(['d']);
+
+            return $queryBuilder->reveal();
+        };
+
+        $createManagerRegistry = function() {
+            $classMetadata = new ClassMetadata('Dummy');
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata);
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+        $this->assertFalse(QueryChecker::hasRootEntityWithForeignKeyIdentifier($createQueryBuilder(), $createManagerRegistry()));
     }
 
     public function testHasOrderByOnToManyJoinWithoutJoin()
     {
-        $queryBuilder = $this->prophesize(QueryBuilder::class);
-        $queryBuilder->getRootEntities()->willReturn(['Dummy']);
-        $queryBuilder->getRootAliases()->willReturn(['d']);
-        $queryBuilder->getDQLPart('join')->willReturn([]);
-        $queryBuilder->getDQLPart('orderBy')->willReturn(['name' => new OrderBy('name', 'asc')]);
-        $classMetadata = $this->prophesize(ClassMetadata::class);
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata->reveal());
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
+        $createQueryBuilder = function() {
+            $queryBuilder = $this->prophesize(QueryBuilder::class);
+            $queryBuilder->getRootEntities()->willReturn(['Dummy']);
+            $queryBuilder->getRootAliases()->willReturn(['d']);
+            $queryBuilder->getDQLPart('join')->willReturn([]);
+            $queryBuilder->getDQLPart('orderBy')->willReturn(['name' => new OrderBy('name', 'asc')]);
 
-        $this->assertFalse(QueryChecker::hasOrderByOnToManyJoin($queryBuilder->reveal(), $managerRegistry->reveal()));
+            return $queryBuilder->reveal();
+        };
+
+        $createManagerRegistry = function() {
+            $classMetadata = $this->prophesize(ClassMetadata::class);
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata->reveal());
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+
+        $this->assertFalse(QueryChecker::hasOrderByOnToManyJoin($createQueryBuilder(), $createManagerRegistry()));
     }
 
     public function testHasOrderByOnToManyJoinWithoutOrderBy()
     {
-        $queryBuilder = $this->prophesize(QueryBuilder::class);
-        $queryBuilder->getRootEntities()->willReturn(['Dummy']);
-        $queryBuilder->getRootAliases()->willReturn(['d']);
-        $queryBuilder->getDQLPart('join')->willReturn(['a_1' => new Join('INNER_JOIN', 'relatedDummy', 'a_1', null, 'a_1.name = r.name')]);
-        $queryBuilder->getDQLPart('orderBy')->willReturn([]);
-        $classMetadata = $this->prophesize(ClassMetadata::class);
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata->reveal());
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
+        $createQueryBuilder = function() {
+            $queryBuilder = $this->prophesize(QueryBuilder::class);
+            $queryBuilder->getRootEntities()->willReturn(['Dummy']);
+            $queryBuilder->getRootAliases()->willReturn(['d']);
+            $queryBuilder->getDQLPart('join')->willReturn(['a_1' => new Join('INNER_JOIN', 'relatedDummy', 'a_1', null, 'a_1.name = r.name')]);
+            $queryBuilder->getDQLPart('orderBy')->willReturn([]);
 
-        $this->assertFalse(QueryChecker::hasOrderByOnToManyJoin($queryBuilder->reveal(), $managerRegistry->reveal()));
+            return $queryBuilder->reveal();
+        };
+
+        $createMangerRegistry = function() {
+            $classMetadata = $this->prophesize(ClassMetadata::class);
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata->reveal());
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+        $this->assertFalse(QueryChecker::hasOrderByOnToManyJoin($createQueryBuilder(), $createMangerRegistry()));
     }
 
     public function testHasOrderByOnToManyJoinWithoutJoinAndWithoutOrderBy()
     {
-        $queryBuilder = $this->prophesize(QueryBuilder::class);
-        $queryBuilder->getRootEntities()->willReturn(['Dummy']);
-        $queryBuilder->getRootAliases()->willReturn(['d']);
-        $queryBuilder->getDQLPart('join')->willReturn([]);
-        $queryBuilder->getDQLPart('orderBy')->willReturn([]);
-        $classMetadata = $this->prophesize(ClassMetadata::class);
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata->reveal());
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
+        $createQueryBuilder = function() {
+            $queryBuilder = $this->prophesize(QueryBuilder::class);
+            $queryBuilder->getRootEntities()->willReturn(['Dummy']);
+            $queryBuilder->getRootAliases()->willReturn(['d']);
+            $queryBuilder->getDQLPart('join')->willReturn([]);
+            $queryBuilder->getDQLPart('orderBy')->willReturn([]);
 
-        $this->assertFalse(QueryChecker::hasOrderByOnToManyJoin($queryBuilder->reveal(), $managerRegistry->reveal()));
+            return $queryBuilder->reveal();
+        };
+
+        $createManagerRegistry = function() {
+            $classMetadata = $this->prophesize(ClassMetadata::class);
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata->reveal());
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+        $this->assertFalse(QueryChecker::hasOrderByOnToManyJoin($createQueryBuilder(), $createManagerRegistry()));
     }
 
     public function testHasOrderByOnToManyJoinWithClassLeftJoin()
     {
-        $queryBuilder = $this->prophesize(QueryBuilder::class);
-        $queryBuilder->getRootEntities()->willReturn(['Dummy']);
-        $queryBuilder->getRootAliases()->willReturn(['d']);
-        $queryBuilder->getDQLPart('join')->willReturn(['a_1' => [new Join('LEFT_JOIN', RelatedDummy::class, 'a_1', null, 'a_1.name = d.name')]]);
-        $queryBuilder->getDQLPart('orderBy')->willReturn(['a_1.name' => new OrderBy('a_1.name', 'asc')]);
-        $classMetadata = $this->prophesize(ClassMetadata::class);
-        $classMetadata->getAssociationsByTargetClass(RelatedDummy::class)->willReturn(['relatedDummy' => ['targetEntity' => RelatedDummy::class]]);
-        $relatedClassMetadata = $this->prophesize(ClassMetadata::class);
-        $relatedClassMetadata->isCollectionValuedAssociation('relatedDummy')->willReturn(true);
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata->reveal());
-        $objectManager->getClassMetadata(RelatedDummy::class)->willReturn($relatedClassMetadata->reveal());
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
-        $managerRegistry->getManagerForClass(RelatedDummy::class)->willReturn($objectManager->reveal());
+        $createQueryBuilder = function() {
+            $queryBuilder = $this->prophesize(QueryBuilder::class);
+            $queryBuilder->getRootEntities()->willReturn(['Dummy']);
+            $queryBuilder->getRootAliases()->willReturn(['d']);
+            $queryBuilder->getDQLPart('join')->willReturn(['a_1' => [new Join('LEFT_JOIN', RelatedDummy::class, 'a_1', null, 'a_1.name = d.name')]]);
+            $queryBuilder->getDQLPart('orderBy')->willReturn(['a_1.name' => new OrderBy('a_1.name', 'asc')]);
 
-        $this->assertTrue(QueryChecker::hasOrderByOnToManyJoin($queryBuilder->reveal(), $managerRegistry->reveal()));
+            return $queryBuilder->reveal();
+        };
+
+        $createManagerRegistry = function() {
+            $classMetadata = $this->prophesize(ClassMetadata::class);
+            $classMetadata->getAssociationsByTargetClass(RelatedDummy::class)->willReturn(['relatedDummy' => ['targetEntity' => RelatedDummy::class]]);
+            $relatedClassMetadata = $this->prophesize(ClassMetadata::class);
+            $relatedClassMetadata->isCollectionValuedAssociation('relatedDummy')->willReturn(true);
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata->reveal());
+            $objectManager->getClassMetadata(RelatedDummy::class)->willReturn($relatedClassMetadata->reveal());
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
+            $managerRegistry->getManagerForClass(RelatedDummy::class)->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+
+        $this->assertTrue(QueryChecker::hasOrderByOnToManyJoin($createQueryBuilder(), $createManagerRegistry()));
     }
 }

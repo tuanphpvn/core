@@ -30,13 +30,25 @@ class DoctrineOrmPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
     public function testCreateNoManager()
     {
         $propertyMetadata = new PropertyMetadata();
-        $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
 
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass(Dummy::class)->willReturn(null);
+        $createPropertyMetadataFactory = function() use ($propertyMetadata) {
 
-        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($managerRegistry->reveal(), $propertyMetadataFactory->reveal());
+            $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
+
+            return $propertyMetadataFactory->reveal();
+        };
+
+
+        $createManagerRegistry = function() {
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass(Dummy::class)->willReturn(null);
+
+            return $managerRegistry->reveal();
+        };
+
+
+        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createManagerRegistry(), $createPropertyMetadataFactory());
 
         $this->assertEquals($doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'id', []), $propertyMetadata);
     }
@@ -44,59 +56,94 @@ class DoctrineOrmPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
     public function testCreateNoClassMetadata()
     {
         $propertyMetadata = new PropertyMetadata();
-        $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
 
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn(null);
+        $createPropertyMetadataFactory = function() use ($propertyMetadata) {
+            $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
 
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass(Dummy::class)->shouldBeCalled()->willReturn($objectManager->reveal());
+            return $propertyMetadataFactory->reveal();
+        };
 
-        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($managerRegistry->reveal(), $propertyMetadataFactory->reveal());
+        $createMangerRegistry = function() {
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn(null);
+
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass(Dummy::class)->shouldBeCalled()->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createMangerRegistry(), $createPropertyMetadataFactory());
 
         $this->assertEquals($doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'id', []), $propertyMetadata);
     }
 
     public function testCreateIsIdentifier()
     {
-        $propertyMetadata = new PropertyMetadata();
-        $propertyMetadata = $propertyMetadata->withIdentifier(true);
+        $createPropertyMetadata = function() {
+            $propertyMetadata = new PropertyMetadata();
+            $propertyMetadata = $propertyMetadata->withIdentifier(true);
 
-        $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
+            return $propertyMetadata;
+        };
 
-        $classMetadata = $this->prophesize(ClassMetadataInfo::class);
+        $propertyMetadata = $createPropertyMetadata();
 
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata(Dummy::class)->shouldNotBeCalled()->willReturn($classMetadata->reveal());
+        $createPropertyMetadataFactory = function() use ($propertyMetadata) {
+            $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
 
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass(Dummy::class)->shouldNotBeCalled()->willReturn($objectManager->reveal());
+            return $propertyMetadataFactory->reveal();
+        };
 
-        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($managerRegistry->reveal(), $propertyMetadataFactory->reveal());
+        $createManageRegistry = function() {
+            $classMetadata = $this->prophesize(ClassMetadataInfo::class);
+
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata(Dummy::class)->shouldNotBeCalled()->willReturn($classMetadata->reveal());
+
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass(Dummy::class)->shouldNotBeCalled()->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createManageRegistry(), $createPropertyMetadataFactory());
 
         $this->assertEquals($doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'id', []), $propertyMetadata);
     }
 
     public function testCreateIsWritable()
     {
-        $propertyMetadata = new PropertyMetadata();
-        $propertyMetadata = $propertyMetadata->withWritable(false);
 
-        $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
 
-        $classMetadata = $this->prophesize(ClassMetadataInfo::class);
-        $classMetadata->getIdentifier()->shouldBeCalled()->willReturn(['id']);
+        $createPropertyMetadataFactory = function()  {
 
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadata->reveal());
+            $propertyMetadata = new PropertyMetadata();
+            $propertyMetadata = $propertyMetadata->withWritable(false);
 
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass(Dummy::class)->shouldBeCalled()->willReturn($objectManager->reveal());
 
-        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($managerRegistry->reveal(), $propertyMetadataFactory->reveal());
+            $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
+
+            return $propertyMetadataFactory->reveal();
+        };
+
+        $createMangerRegistry = function() {
+            $classMetadata = $this->prophesize(ClassMetadataInfo::class);
+            $classMetadata->getIdentifier()->shouldBeCalled()->willReturn(['id']);
+
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadata->reveal());
+
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass(Dummy::class)->shouldBeCalled()->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createMangerRegistry(), $createPropertyMetadataFactory());
 
         $doctrinePropertyMetadata = $doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'id', []);
 
@@ -106,22 +153,30 @@ class DoctrineOrmPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
 
     public function testCreateClassMetadataInfo()
     {
-        $propertyMetadata = new PropertyMetadata();
+        $createPropertyMetadataFactory = function() {
+            $propertyMetadata = new PropertyMetadata();
 
-        $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
+            $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
 
-        $classMetadata = $this->prophesize(ClassMetadataInfo::class);
-        $classMetadata->getIdentifier()->shouldBeCalled()->willReturn(['id']);
-        $classMetadata->isIdentifierNatural()->shouldBeCalled()->willReturn(true);
+            return $propertyMetadataFactory->reveal();
+        };
 
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadata->reveal());
+        $createManagerRegistry = function() {
+            $classMetadata = $this->prophesize(ClassMetadataInfo::class);
+            $classMetadata->getIdentifier()->shouldBeCalled()->willReturn(['id']);
+            $classMetadata->isIdentifierNatural()->shouldBeCalled()->willReturn(true);
 
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass(Dummy::class)->shouldBeCalled()->willReturn($objectManager->reveal());
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadata->reveal());
 
-        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($managerRegistry->reveal(), $propertyMetadataFactory->reveal());
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass(Dummy::class)->shouldBeCalled()->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createManagerRegistry(), $createPropertyMetadataFactory());
 
         $doctrinePropertyMetadata = $doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'id', []);
 
@@ -131,21 +186,30 @@ class DoctrineOrmPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
 
     public function testCreateClassMetadata()
     {
-        $propertyMetadata = new PropertyMetadata();
+        $createPropertyMetadataFactory = function() {
+            $propertyMetadata = new PropertyMetadata();
 
-        $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
+            $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
 
-        $classMetadata = $this->prophesize(ClassMetadata::class);
-        $classMetadata->getIdentifier()->shouldBeCalled()->willReturn(['id']);
+            return $propertyMetadataFactory->reveal();
+        };
 
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadata->reveal());
+        $createMangerRegistry = function() {
+            $classMetadata = $this->prophesize(ClassMetadata::class);
+            $classMetadata->getIdentifier()->shouldBeCalled()->willReturn(['id']);
 
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass(Dummy::class)->shouldBeCalled()->willReturn($objectManager->reveal());
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadata->reveal());
 
-        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($managerRegistry->reveal(), $propertyMetadataFactory->reveal());
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass(Dummy::class)->shouldBeCalled()->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+
+        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createMangerRegistry(), $createPropertyMetadataFactory());
 
         $doctrinePropertyMetadata = $doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'id', []);
 

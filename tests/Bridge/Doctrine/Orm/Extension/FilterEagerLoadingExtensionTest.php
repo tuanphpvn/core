@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace ApiPlatform\Core\Tests\Bridge\Doctrine\Orm\Extension;
 
@@ -34,126 +34,209 @@ class FilterEagerLoadingExtensionTest extends \PHPUnit_Framework_TestCase
 {
     public function testIsNoForceEagerCollectionAttributes()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class, null, null, null, [
-            'get' => [
-                'force_eager' => false,
-            ],
-        ], null));
+        $createResourceMetadataFactory = function () {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class, null, null, null, [
+                'get' => [
+                    'force_eager' => false,
+                ],
+            ], null));
 
-        $em = $this->prophesize(EntityManager::class);
-        $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $qb = $this->prophesize(QueryBuilder::class);
-        $qb->getDQLPart('where')->shouldNotBeCalled();
-        $qb->getEntityManager()->willReturn($em);
 
-        $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+        $createQueryBuilder = function () {
+            $em = $this->prophesize(EntityManager::class);
+            $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
 
-        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($resourceMetadataFactoryProphecy->reveal(), true);
-        $filterEagerLoadingExtension->applyToCollection($qb->reveal(), $queryNameGenerator->reveal(), DummyCar::class, 'get');
+            $qb = $this->prophesize(QueryBuilder::class);
+            $qb->getDQLPart('where')->shouldNotBeCalled();
+            $qb->getEntityManager()->willReturn($em);
+
+            return $qb->reveal();
+        };
+
+
+        $createQueryNameGenerator = function () {
+            $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+
+            return $queryNameGenerator->reveal();
+        };
+
+
+        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($createResourceMetadataFactory(), true);
+        $filterEagerLoadingExtension->applyToCollection($createQueryBuilder(), $createQueryNameGenerator(), DummyCar::class, 'get');
     }
 
     public function testIsNoForceEagerResource()
     {
-        $em = $this->prophesize(EntityManager::class);
-        $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
+        $createResourceMetadataFactory = function () {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class, null, null, null, [
+                'get' => [],
+            ], ['force_eager' => false]));
 
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class, null, null, null, [
-            'get' => [],
-        ], ['force_eager' => false]));
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $qb = $this->prophesize(QueryBuilder::class);
-        $qb->getDQLPart('where')->shouldNotBeCalled();
-        $qb->getEntityManager()->willReturn($em);
+        $createQueryBuilder = function () {
+            $em = $this->prophesize(EntityManager::class);
+            $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
+            $qb = $this->prophesize(QueryBuilder::class);
+            $qb->getDQLPart('where')->shouldNotBeCalled();
+            $qb->getEntityManager()->willReturn($em);
 
-        $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+            return $qb->reveal();
+        };
 
-        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($resourceMetadataFactoryProphecy->reveal(), true);
-        $filterEagerLoadingExtension->applyToCollection($qb->reveal(), $queryNameGenerator->reveal(), DummyCar::class, null);
+        $createQueryNameGenerator = function () {
+            $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+
+            return $queryNameGenerator->reveal();
+        };
+
+        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($createResourceMetadataFactory(), true);
+        $filterEagerLoadingExtension->applyToCollection($createQueryBuilder(), $createQueryNameGenerator(), DummyCar::class, null);
     }
 
     public function testIsForceEagerConfig()
     {
-        $em = $this->prophesize(EntityManager::class);
-        $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
+        $createResourceMetadataFactory = function () {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class, null, null, null, [
+                'get' => [],
+            ]));
 
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class, null, null, null, [
-            'get' => [],
-        ]));
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $qb = $this->prophesize(QueryBuilder::class);
-        $qb->getDQLPart('where')->shouldNotBeCalled();
-        $qb->getEntityManager()->willReturn($em);
+        $createQueryBuilder = function () {
+            $em = $this->prophesize(EntityManager::class);
+            $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
 
-        $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+            $qb = $this->prophesize(QueryBuilder::class);
+            $qb->getDQLPart('where')->shouldNotBeCalled();
+            $qb->getEntityManager()->willReturn($em);
 
-        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($resourceMetadataFactoryProphecy->reveal(), false);
-        $filterEagerLoadingExtension->applyToCollection($qb->reveal(), $queryNameGenerator->reveal(), DummyCar::class, 'get');
+            return $qb->reveal();
+        };
+
+        $createQueryNameGenerator = function () {
+            $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+
+            return $queryNameGenerator->reveal();
+        };
+
+        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($createResourceMetadataFactory(), false);
+        $filterEagerLoadingExtension->applyToCollection($createQueryBuilder(), $createQueryNameGenerator(), DummyCar::class, 'get');
     }
 
     public function testHasNoWherePart()
     {
-        $em = $this->prophesize(EntityManager::class);
-        $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
 
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class));
+        $createResourceMetadataFactory = function () {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class));
 
-        $qb = $this->prophesize(QueryBuilder::class);
-        $qb->getDQLPart('where')->shouldBeCalled()->willReturn(null);
-        $qb->getEntityManager()->willReturn($em);
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
 
-        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($resourceMetadataFactoryProphecy->reveal(), true);
-        $filterEagerLoadingExtension->applyToCollection($qb->reveal(), $queryNameGenerator->reveal(), DummyCar::class, 'get');
+        $createQueryBuilder = function () {
+            $em = $this->prophesize(EntityManager::class);
+            $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
+            $qb = $this->prophesize(QueryBuilder::class);
+            $qb->getDQLPart('where')->shouldBeCalled()->willReturn(null);
+            $qb->getEntityManager()->willReturn($em);
+
+            return $qb->reveal();
+        };
+
+        $createQueryNameGenerator = function () {
+            $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+
+            return $queryNameGenerator->reveal();
+        };
+
+
+        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($createResourceMetadataFactory(), /** $forceEager */
+            true);
+        $filterEagerLoadingExtension->applyToCollection($createQueryBuilder(), $createQueryNameGenerator(), DummyCar::class, 'get');
     }
 
     public function testHasNoJoinPart()
     {
-        $em = $this->prophesize(EntityManager::class);
-        $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
+        $createResourceMetadataFactory = function () {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class));
 
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class));
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $qb = $this->prophesize(QueryBuilder::class);
-        $qb->getDQLPart('where')->shouldBeCalled()->willReturn(new Expr\Andx());
-        $qb->getDQLPart('join')->shouldBeCalled()->willReturn(null);
-        $qb->getEntityManager()->willReturn($em);
 
-        $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+        $createQueryBuilder = function () {
+            $em = $this->prophesize(EntityManager::class);
+            $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
 
-        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($resourceMetadataFactoryProphecy->reveal(), true);
-        $filterEagerLoadingExtension->applyToCollection($qb->reveal(), $queryNameGenerator->reveal(), DummyCar::class, 'get');
+            $qb = $this->prophesize(QueryBuilder::class);
+            $qb->getDQLPart('where')->shouldBeCalled()->willReturn(new Expr\Andx());
+            $qb->getDQLPart('join')->shouldBeCalled()->willReturn(null);
+            $qb->getEntityManager()->willReturn($em);
+
+            return $qb->reveal();
+        };
+
+        $createQueryNameGenerator = function () {
+            $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+
+            return $queryNameGenerator->reveal();
+        };
+
+
+        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($createResourceMetadataFactory(), /** $forceEager */
+            true);
+        $filterEagerLoadingExtension->applyToCollection($createQueryBuilder(), $createQueryNameGenerator(), DummyCar::class, 'get');
     }
 
     public function testApplyCollection()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class));
+        $createResourceMetadataFactory = function () {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class));
 
-        $em = $this->prophesize(EntityManager::class);
-        $em->getExpressionBuilder()->shouldBeCalled()->willReturn(new Expr());
-        $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $qb = new QueryBuilder($em->reveal());
+        $createQueryBuilder = function () {
+            $em = $this->prophesize(EntityManager::class);
+            $em->getExpressionBuilder()->shouldBeCalled()->willReturn(new Expr());
+            $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
 
-        $qb->select('o')
-            ->from(DummyCar::class, 'o')
-            ->leftJoin('o.colors', 'colors')
-            ->where('o.colors = :foo')
-            ->setParameter('foo', 1);
+            $qb = new QueryBuilder($em->reveal());
 
-        $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
-        $queryNameGenerator->generateJoinAlias('colors')->shouldBeCalled()->willReturn('colors_2');
-        $queryNameGenerator->generateJoinAlias('o')->shouldBeCalled()->willReturn('o_2');
+            $qb->select('o')
+                ->from(DummyCar::class, 'o')
+                ->leftJoin('o.colors', 'colors')
+                ->where('o.colors = :foo')
+                ->setParameter('foo', 1);
 
-        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($resourceMetadataFactoryProphecy->reveal(), true);
-        $filterEagerLoadingExtension->applyToCollection($qb, $queryNameGenerator->reveal(), DummyCar::class, 'get');
+            return $qb;
+        };
+
+        $qb = $createQueryBuilder();
+
+        $createQueryNameGenerator = function () {
+            $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+            $queryNameGenerator->generateJoinAlias('colors')->shouldBeCalled()->willReturn('colors_2');
+            $queryNameGenerator->generateJoinAlias('o')->shouldBeCalled()->willReturn('o_2');
+
+            return $queryNameGenerator->reveal();
+        };
+
+        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($createResourceMetadataFactory(), /** $forceEager */
+            true);
+        $filterEagerLoadingExtension->applyToCollection($qb, $createQueryNameGenerator(), DummyCar::class, 'get');
 
         $this->assertEquals('SELECT o FROM ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyCar o LEFT JOIN o.colors colors WHERE o IN(SELECT o_2 FROM ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\DummyCar o_2 LEFT JOIN o_2.colors colors_2 WHERE o_2.colors = :foo)', $qb->getDQL());
     }
@@ -163,27 +246,43 @@ class FilterEagerLoadingExtensionTest extends \PHPUnit_Framework_TestCase
      */
     public function testHiddenOrderBy()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class));
+        $createResourceMetadataFactory = function () {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class));
 
-        $em = $this->prophesize(EntityManager::class);
-        $em->getExpressionBuilder()->shouldBeCalled()->willReturn(new Expr());
-        $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $qb = new QueryBuilder($em->reveal());
 
-        $qb->select('o', 'CASE WHEN o.dateCreated IS NULL THEN 0 ELSE 1 END AS HIDDEN _o_dateCreated_null_rank')
-            ->from(DummyCar::class, 'o')
-            ->leftJoin('o.colors', 'colors')
-            ->where('o.colors = :foo')
-            ->orderBy('_o_dateCreated_null_rank DESC')
-            ->setParameter('foo', 1);
+        $createQueryBuilder = function () {
+            $em = $this->prophesize(EntityManager::class);
+            $em->getExpressionBuilder()->shouldBeCalled()->willReturn(new Expr());
+            $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
 
-        $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
-        $queryNameGenerator->generateJoinAlias('colors')->shouldBeCalled()->willReturn('colors_2');
-        $queryNameGenerator->generateJoinAlias('o')->shouldBeCalled()->willReturn('o_2');
-        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($resourceMetadataFactoryProphecy->reveal(), true);
-        $filterEagerLoadingExtension->applyToCollection($qb, $queryNameGenerator->reveal(), DummyCar::class, 'get');
+            $qb = new QueryBuilder($em->reveal());
+
+            $qb->select('o', 'CASE WHEN o.dateCreated IS NULL THEN 0 ELSE 1 END AS HIDDEN _o_dateCreated_null_rank')
+                ->from(DummyCar::class, 'o')
+                ->leftJoin('o.colors', 'colors')
+                ->where('o.colors = :foo')
+                ->orderBy('_o_dateCreated_null_rank DESC')
+                ->setParameter('foo', 1);
+
+            return $qb;
+        };
+
+        $qb = $createQueryBuilder();
+
+        $createQueryNameGenerator = function () {
+            $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+            $queryNameGenerator->generateJoinAlias('colors')->shouldBeCalled()->willReturn('colors_2');
+            $queryNameGenerator->generateJoinAlias('o')->shouldBeCalled()->willReturn('o_2');
+
+            return $queryNameGenerator->reveal();
+        };
+
+        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($createResourceMetadataFactory(), true);
+        $filterEagerLoadingExtension->applyToCollection($qb, $createQueryNameGenerator(), DummyCar::class, 'get');
 
         $expected = <<<SQL
 SELECT o, CASE WHEN o.dateCreated IS NULL THEN 0 ELSE 1 END AS HIDDEN _o_dateCreated_null_rank
@@ -201,29 +300,47 @@ SQL;
 
     public function testGroupBy()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class));
+        $createResourceMetadataFactory = function () {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(DummyCar::class)->willReturn(new ResourceMetadata(DummyCar::class));
 
-        $em = $this->prophesize(EntityManager::class);
-        $em->getExpressionBuilder()->shouldBeCalled()->willReturn(new Expr());
-        $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $qb = new QueryBuilder($em->reveal());
+        $createQueryBuilder = function () {
+            $em = $this->prophesize(EntityManager::class);
+            $em->getExpressionBuilder()->shouldBeCalled()->willReturn(new Expr());
+            $em->getClassMetadata(DummyCar::class)->shouldBeCalled()->willReturn(new ClassMetadataInfo(DummyCar::class));
 
-        $qb->select('o', 'count(o.id) as counter')
-            ->from(DummyCar::class, 'o')
-            ->leftJoin('o.colors', 'colors')
-            ->where('o.colors = :foo')
-            ->orderBy('o.colors')
-            ->groupBy('o.colors')
-            ->having('counter > 3')
-            ->setParameter('foo', 1);
+            $qb = new QueryBuilder($em->reveal());
 
-        $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
-        $queryNameGenerator->generateJoinAlias('colors')->shouldBeCalled()->willReturn('colors_2');
-        $queryNameGenerator->generateJoinAlias('o')->shouldBeCalled()->willReturn('o_2');
-        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($resourceMetadataFactoryProphecy->reveal(), true);
-        $filterEagerLoadingExtension->applyToCollection($qb, $queryNameGenerator->reveal(), DummyCar::class, 'get');
+            $qb->select('o', 'count(o.id) as counter')
+                ->from(DummyCar::class, 'o')
+                ->leftJoin('o.colors', 'colors')
+                ->where('o.colors = :foo')
+                ->orderBy('o.colors')
+                ->groupBy('o.colors')
+                ->having('counter > 3')
+                ->setParameter('foo', 1);
+
+            return $qb;
+        };
+
+        $qb = $createQueryBuilder();
+
+
+        $createQueryNameGenerator = function () {
+            $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+            $queryNameGenerator->generateJoinAlias('colors')->shouldBeCalled()->willReturn('colors_2');
+            $queryNameGenerator->generateJoinAlias('o')->shouldBeCalled()->willReturn('o_2');
+
+            return $queryNameGenerator->reveal();
+        };
+
+
+        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($createResourceMetadataFactory(), /** $forceEager */
+            true);
+        $filterEagerLoadingExtension->applyToCollection($qb, $createQueryNameGenerator(), DummyCar::class, 'get');
 
         $expected = <<<SQL
 SELECT o, count(o.id) as counter
@@ -243,33 +360,50 @@ SQL;
 
     public function testCompositeIdentifiers()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(CompositeRelation::class)->willReturn(new ResourceMetadata(CompositeRelation::class));
+        $createResourceMetadataFactory = function () {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(CompositeRelation::class)->willReturn(new ResourceMetadata(CompositeRelation::class));
 
-        $classMetadata = new ClassMetadataInfo(CompositeRelation::class);
-        $classMetadata->isIdentifierComposite = true;
-        $classMetadata->identifier = ['item', 'label'];
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $em = $this->prophesize(EntityManager::class);
-        $em->getExpressionBuilder()->shouldBeCalled()->willReturn(new Expr());
-        $em->getClassMetadata(CompositeRelation::class)->shouldBeCalled()->willReturn($classMetadata);
 
-        $qb = new QueryBuilder($em->reveal());
+        $createQueryBuilder = function () {
+            $classMetadata = new ClassMetadataInfo(CompositeRelation::class);
+            $classMetadata->isIdentifierComposite = true;
+            $classMetadata->identifier = ['item', 'label'];
 
-        $qb->select('o')
-            ->from(CompositeRelation::class, 'o')
-            ->innerJoin('o.compositeItem', 'item')
-            ->innerJoin('o.compositeLabel', 'label')
-            ->where('item.field1 = :foo')
-            ->setParameter('foo', 1);
+            $em = $this->prophesize(EntityManager::class);
+            $em->getExpressionBuilder()->shouldBeCalled()->willReturn(new Expr());
+            $em->getClassMetadata(CompositeRelation::class)->shouldBeCalled()->willReturn($classMetadata);
 
-        $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
-        $queryNameGenerator->generateJoinAlias('item')->shouldBeCalled()->willReturn('item_2');
-        $queryNameGenerator->generateJoinAlias('label')->shouldBeCalled()->willReturn('label_2');
-        $queryNameGenerator->generateJoinAlias('o')->shouldBeCalled()->willReturn('o_2');
+            $qb = new QueryBuilder($em->reveal());
 
-        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($resourceMetadataFactoryProphecy->reveal(), true);
-        $filterEagerLoadingExtension->applyToCollection($qb, $queryNameGenerator->reveal(), CompositeRelation::class, 'get');
+            $qb->select('o')
+                ->from(CompositeRelation::class, 'o')
+                ->innerJoin('o.compositeItem', 'item')
+                ->innerJoin('o.compositeLabel', 'label')
+                ->where('item.field1 = :foo')
+                ->setParameter('foo', 1);
+
+            return $qb;
+        };
+
+        $qb = $createQueryBuilder();
+
+        $createQueryNameGenerator = function () {
+            $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+            $queryNameGenerator->generateJoinAlias('item')->shouldBeCalled()->willReturn('item_2');
+            $queryNameGenerator->generateJoinAlias('label')->shouldBeCalled()->willReturn('label_2');
+            $queryNameGenerator->generateJoinAlias('o')->shouldBeCalled()->willReturn('o_2');
+
+            return $queryNameGenerator->reveal();
+        };
+
+
+        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($createResourceMetadataFactory(), /** $forceEager */
+            true);
+        $filterEagerLoadingExtension->applyToCollection($qb, $createQueryNameGenerator(), CompositeRelation::class, 'get');
 
         $expected = <<<SQL
 SELECT o
@@ -294,40 +428,57 @@ SQL;
 
     public function testFetchEagerWithNoForceEager()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(CompositeRelation::class)->willReturn(new ResourceMetadata(CompositeRelation::class));
+        $createResourceMetadataFactory = function () {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(CompositeRelation::class)->willReturn(new ResourceMetadata(CompositeRelation::class));
 
-        $classMetadata = new ClassMetadataInfo(CompositeRelation::class);
-        $classMetadata->isIdentifierComposite = true;
-        $classMetadata->identifier = ['item', 'label'];
-        $classMetadata->associationMappings = [
-            'item' => ['fetch' => 3, 'joinColumns' => [['nullable' => false]], 'targetEntity' => CompositeItem::class],
-            'label' => ['fetch' => 3, 'joinColumns' => [['nullable' => false]], 'targetEntity' => CompositeLabel::class],
-        ];
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $em = $this->prophesize(EntityManager::class);
-        $em->getExpressionBuilder()->shouldBeCalled()->willReturn(new Expr());
-        $em->getClassMetadata(CompositeRelation::class)->shouldBeCalled()->willReturn($classMetadata);
 
-        $qb = new QueryBuilder($em->reveal());
+        $createQueryBuilder = function () {
 
-        $qb->select('o')
-            ->from(CompositeRelation::class, 'o')
-            ->innerJoin('o.compositeItem', 'item')
-            ->innerJoin('o.compositeLabel', 'label')
-            ->leftJoin('o.foo', 'foo', 'WITH', 'o.bar = item.foo')
-            ->where('item.field1 = :foo')
-            ->setParameter('foo', 1);
+            $classMetadata = new ClassMetadataInfo(CompositeRelation::class);
+            $classMetadata->isIdentifierComposite = true;
+            $classMetadata->identifier = ['item', 'label'];
+            $classMetadata->associationMappings = [
+                'item' => ['fetch' => 3, 'joinColumns' => [['nullable' => false]], 'targetEntity' => CompositeItem::class],
+                'label' => ['fetch' => 3, 'joinColumns' => [['nullable' => false]], 'targetEntity' => CompositeLabel::class],
+            ];
 
-        $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
-        $queryNameGenerator->generateJoinAlias('item')->shouldBeCalled()->willReturn('item_2');
-        $queryNameGenerator->generateJoinAlias('label')->shouldBeCalled()->willReturn('label_2');
-        $queryNameGenerator->generateJoinAlias('o')->shouldBeCalled()->willReturn('o_2');
+            $em = $this->prophesize(EntityManager::class);
+            $em->getExpressionBuilder()->shouldBeCalled()->willReturn(new Expr());
+            $em->getClassMetadata(CompositeRelation::class)->shouldBeCalled()->willReturn($classMetadata);
 
-        $queryNameGenerator->generateJoinAlias('foo')->shouldBeCalled()->willReturn('foo_2');
+            $qb = new QueryBuilder($em->reveal());
 
-        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($resourceMetadataFactoryProphecy->reveal(), false);
-        $filterEagerLoadingExtension->applyToCollection($qb, $queryNameGenerator->reveal(), CompositeRelation::class, 'get');
+            $qb->select('o')
+                ->from(CompositeRelation::class, 'o')
+                ->innerJoin('o.compositeItem', 'item')
+                ->innerJoin('o.compositeLabel', 'label')
+                ->leftJoin('o.foo', 'foo', 'WITH', 'o.bar = item.foo')
+                ->where('item.field1 = :foo')
+                ->setParameter('foo', 1);
+
+            return $qb;
+        };
+
+        $qb = $createQueryBuilder();
+
+        $createQueryNameGenerator = function () {
+            $queryNameGenerator = $this->prophesize(QueryNameGeneratorInterface::class);
+            $queryNameGenerator->generateJoinAlias('item')->shouldBeCalled()->willReturn('item_2');
+            $queryNameGenerator->generateJoinAlias('label')->shouldBeCalled()->willReturn('label_2');
+            $queryNameGenerator->generateJoinAlias('o')->shouldBeCalled()->willReturn('o_2');
+
+            $queryNameGenerator->generateJoinAlias('foo')->shouldBeCalled()->willReturn('foo_2');
+
+            return $queryNameGenerator->reveal();
+        };
+
+        $filterEagerLoadingExtension = new FilterEagerLoadingExtension($createResourceMetadataFactory(), /** $forceEager */
+            false);
+        $filterEagerLoadingExtension->applyToCollection($qb, $createQueryNameGenerator(), CompositeRelation::class, 'get');
 
         $expected = <<<SQL
 SELECT o

@@ -39,12 +39,16 @@ class FilterPassTest extends \PHPUnit_Framework_TestCase
         $filterCollectionFactoryDefinitionProphecy = $this->prophesize(Definition::class);
         $filterCollectionFactoryDefinitionProphecy->addArgument(['my_id'])->shouldBeCalled();
 
-        $containerBuilderProphecy = $this->prophesize(ContainerBuilder::class);
-        $containerBuilderProphecy->findTaggedServiceIds('api_platform.filter', true)->willReturn(['foo' => [], 'bar' => [['id' => 'my_id']]])->shouldBeCalled();
-        $containerBuilderProphecy->getDefinition('api_platform.filter_locator')->willReturn($filterLocatorDefinitionProphecy->reveal())->shouldBeCalled();
-        $containerBuilderProphecy->getDefinition('api_platform.filter_collection_factory')->willReturn($filterCollectionFactoryDefinitionProphecy->reveal())->shouldBeCalled();
+        $createContainerBuilder = function() use ($filterCollectionFactoryDefinitionProphecy, $filterLocatorDefinitionProphecy) {
+            $containerBuilderProphecy = $this->prophesize(ContainerBuilder::class);
+            $containerBuilderProphecy->findTaggedServiceIds('api_platform.filter', true)->willReturn(['foo' => [], 'bar' => [['id' => 'my_id']]])->shouldBeCalled();
+            $containerBuilderProphecy->getDefinition('api_platform.filter_locator')->willReturn($filterLocatorDefinitionProphecy->reveal())->shouldBeCalled();
+            $containerBuilderProphecy->getDefinition('api_platform.filter_collection_factory')->willReturn($filterCollectionFactoryDefinitionProphecy->reveal())->shouldBeCalled();
 
-        $dataProviderPass->process($containerBuilderProphecy->reveal());
+            return $containerBuilderProphecy->reveal();
+        };
+
+        $dataProviderPass->process($createContainerBuilder());
     }
 
     public function testIdNotExist()
@@ -61,11 +65,16 @@ class FilterPassTest extends \PHPUnit_Framework_TestCase
         $filterCollectionFactoryDefinitionProphecy = $this->prophesize(Definition::class);
         $filterCollectionFactoryDefinitionProphecy->addArgument(['bar'])->shouldBeCalled();
 
-        $containerBuilderProphecy = $this->prophesize(ContainerBuilder::class);
-        $containerBuilderProphecy->findTaggedServiceIds('api_platform.filter', true)->willReturn(['foo' => [], 'bar' => [['hi' => 'hello']]])->shouldBeCalled();
-        $containerBuilderProphecy->getDefinition('api_platform.filter_locator')->willReturn($filterLocatorDefinitionProphecy->reveal())->shouldBeCalled();
-        $containerBuilderProphecy->getDefinition('api_platform.filter_collection_factory')->willReturn($filterCollectionFactoryDefinitionProphecy->reveal())->shouldBeCalled();
+        $createContainerBuilder = function() use ($filterLocatorDefinitionProphecy, $filterCollectionFactoryDefinitionProphecy) {
+            $containerBuilderProphecy = $this->prophesize(ContainerBuilder::class);
+            $containerBuilderProphecy->findTaggedServiceIds('api_platform.filter', true)->willReturn(['foo' => [], 'bar' => [['hi' => 'hello']]])->shouldBeCalled();
+            $containerBuilderProphecy->getDefinition('api_platform.filter_locator')->willReturn($filterLocatorDefinitionProphecy->reveal())->shouldBeCalled();
+            $containerBuilderProphecy->getDefinition('api_platform.filter_collection_factory')->willReturn($filterCollectionFactoryDefinitionProphecy->reveal())->shouldBeCalled();
 
-        $dataProviderPass->process($containerBuilderProphecy->reveal());
+            return $containerBuilderProphecy->reveal();
+        };
+
+
+        $dataProviderPass->process($createContainerBuilder());
     }
 }

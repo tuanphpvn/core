@@ -44,22 +44,27 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
     public function testGetItemSingleIdentifier()
     {
         $context = ['foo' => 'bar', 'fetch_data' => true];
-        $queryProphecy = $this->prophesize(AbstractQuery::class);
-        $queryProphecy->getOneOrNullResult()->willReturn([])->shouldBeCalled();
 
-        $comparisonProphecy = $this->prophesize(Comparison::class);
-        $comparison = $comparisonProphecy->reveal();
+        $createQueryBuilder = function() {
+            $comparisonProphecy = $this->prophesize(Comparison::class);
+            $comparison = $comparisonProphecy->reveal();
 
-        $exprProphecy = $this->prophesize(Expr::class);
-        $exprProphecy->eq('o.id', ':id_id')->willReturn($comparisonProphecy)->shouldBeCalled();
+            $exprProphecy = $this->prophesize(Expr::class);
+            $exprProphecy->eq('o.id', ':id_id')->willReturn($comparisonProphecy)->shouldBeCalled();
 
-        $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
-        $queryBuilderProphecy->getQuery()->willReturn($queryProphecy->reveal())->shouldBeCalled();
-        $queryBuilderProphecy->expr()->willReturn($exprProphecy->reveal())->shouldBeCalled();
-        $queryBuilderProphecy->andWhere($comparison)->shouldBeCalled();
-        $queryBuilderProphecy->setParameter(':id_id', 1)->shouldBeCalled();
+            $queryProphecy = $this->prophesize(AbstractQuery::class);
+            $queryProphecy->getOneOrNullResult()->willReturn([])->shouldBeCalled();
 
-        $queryBuilder = $queryBuilderProphecy->reveal();
+            $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
+            $queryBuilderProphecy->getQuery()->willReturn($queryProphecy->reveal())->shouldBeCalled();
+            $queryBuilderProphecy->expr()->willReturn($exprProphecy->reveal())->shouldBeCalled();
+            $queryBuilderProphecy->andWhere($comparison)->shouldBeCalled();
+            $queryBuilderProphecy->setParameter(':id_id', 1)->shouldBeCalled();
+
+            return $queryBuilderProphecy->reveal();
+        };
+
+        $queryBuilder = $createQueryBuilder();
 
         list($propertyNameCollectionFactory, $propertyMetadataFactory) = $this->getMetadataFactories(Dummy::class, [
             'id',
@@ -70,35 +75,45 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
             ],
         ], $queryBuilder);
 
-        $extensionProphecy = $this->prophesize(QueryItemExtensionInterface::class);
-        $extensionProphecy->applyToItem($queryBuilder, Argument::type(QueryNameGeneratorInterface::class), Dummy::class, ['id' => 1], 'foo', $context)->shouldBeCalled();
+        $createExtension = function() use ($queryBuilder, $context) {
 
-        $dataProvider = new ItemDataProvider($managerRegistry, $propertyNameCollectionFactory, $propertyMetadataFactory, [$extensionProphecy->reveal()]);
+            $extensionProphecy = $this->prophesize(QueryItemExtensionInterface::class);
+            $extensionProphecy->applyToItem($queryBuilder, Argument::type(QueryNameGeneratorInterface::class), Dummy::class, ['id' => 1], 'foo', $context)->shouldBeCalled();
+
+            return $extensionProphecy->reveal();
+        };
+
+        $dataProvider = new ItemDataProvider($managerRegistry, $propertyNameCollectionFactory, $propertyMetadataFactory, [$createExtension()]);
 
         $this->assertEquals([], $dataProvider->getItem(Dummy::class, 1, 'foo', $context));
     }
 
     public function testGetItemDoubleIdentifier()
     {
-        $queryProphecy = $this->prophesize(AbstractQuery::class);
-        $queryProphecy->getOneOrNullResult()->willReturn([])->shouldBeCalled();
+        $createQueryBuilder = function() {
+            $queryProphecy = $this->prophesize(AbstractQuery::class);
+            $queryProphecy->getOneOrNullResult()->willReturn([])->shouldBeCalled();
 
-        $comparisonProphecy = $this->prophesize(Comparison::class);
-        $comparison = $comparisonProphecy->reveal();
+            $comparisonProphecy = $this->prophesize(Comparison::class);
+            $comparison = $comparisonProphecy->reveal();
 
-        $exprProphecy = $this->prophesize(Expr::class);
-        $exprProphecy->eq('o.ida', ':id_ida')->willReturn($comparisonProphecy)->shouldBeCalled();
-        $exprProphecy->eq('o.idb', ':id_idb')->willReturn($comparisonProphecy)->shouldBeCalled();
+            $exprProphecy = $this->prophesize(Expr::class);
+            $exprProphecy->eq('o.ida', ':id_ida')->willReturn($comparisonProphecy)->shouldBeCalled();
+            $exprProphecy->eq('o.idb', ':id_idb')->willReturn($comparisonProphecy)->shouldBeCalled();
 
-        $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
-        $queryBuilderProphecy->getQuery()->willReturn($queryProphecy->reveal())->shouldBeCalled();
-        $queryBuilderProphecy->expr()->willReturn($exprProphecy->reveal())->shouldBeCalled();
-        $queryBuilderProphecy->andWhere($comparison)->shouldBeCalled();
+            $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
+            $queryBuilderProphecy->getQuery()->willReturn($queryProphecy->reveal())->shouldBeCalled();
+            $queryBuilderProphecy->expr()->willReturn($exprProphecy->reveal())->shouldBeCalled();
+            $queryBuilderProphecy->andWhere($comparison)->shouldBeCalled();
 
-        $queryBuilderProphecy->setParameter(':id_ida', 1)->shouldBeCalled();
-        $queryBuilderProphecy->setParameter(':id_idb', 2)->shouldBeCalled();
+            $queryBuilderProphecy->setParameter(':id_ida', 1)->shouldBeCalled();
+            $queryBuilderProphecy->setParameter(':id_idb', 2)->shouldBeCalled();
 
-        $queryBuilder = $queryBuilderProphecy->reveal();
+            return $queryBuilderProphecy->reveal();
+        };
+
+        $queryBuilder = $createQueryBuilder();
+
 
         list($propertyNameCollectionFactory, $propertyMetadataFactory) = $this->getMetadataFactories(Dummy::class, [
             'ida',
@@ -113,10 +128,17 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
             ],
         ], $queryBuilder);
 
-        $extensionProphecy = $this->prophesize(QueryItemExtensionInterface::class);
-        $extensionProphecy->applyToItem($queryBuilder, Argument::type(QueryNameGeneratorInterface::class), Dummy::class, ['ida' => 1, 'idb' => 2], 'foo', [])->shouldBeCalled();
 
-        $dataProvider = new ItemDataProvider($managerRegistry, $propertyNameCollectionFactory, $propertyMetadataFactory, [$extensionProphecy->reveal()]);
+
+        $createExtension = function() use ($queryBuilder) {
+
+            $extensionProphecy = $this->prophesize(QueryItemExtensionInterface::class);
+            $extensionProphecy->applyToItem($queryBuilder, Argument::type(QueryNameGeneratorInterface::class), Dummy::class, ['ida' => 1, 'idb' => 2], 'foo', [])->shouldBeCalled();
+
+            return $extensionProphecy->reveal();
+        };
+
+        $dataProvider = new ItemDataProvider($managerRegistry, $propertyNameCollectionFactory, $propertyMetadataFactory, [$createExtension()]);
 
         $this->assertEquals([], $dataProvider->getItem(Dummy::class, 'ida=1;idb=2', 'foo'));
     }
@@ -145,18 +167,23 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
 
     public function testQueryResultExtension()
     {
-        $comparisonProphecy = $this->prophesize(Comparison::class);
-        $comparison = $comparisonProphecy->reveal();
 
-        $exprProphecy = $this->prophesize(Expr::class);
-        $exprProphecy->eq('o.id', ':id_id')->willReturn($comparisonProphecy)->shouldBeCalled();
+        $createQueryBuilder = function() {
+            $comparisonProphecy = $this->prophesize(Comparison::class);
+            $comparison = $comparisonProphecy->reveal();
 
-        $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
-        $queryBuilderProphecy->expr()->willReturn($exprProphecy->reveal())->shouldBeCalled();
-        $queryBuilderProphecy->andWhere($comparison)->shouldBeCalled();
-        $queryBuilderProphecy->setParameter(':id_id', 1)->shouldBeCalled();
+            $exprProphecy = $this->prophesize(Expr::class);
+            $exprProphecy->eq('o.id', ':id_id')->willReturn($comparisonProphecy)->shouldBeCalled();
 
-        $queryBuilder = $queryBuilderProphecy->reveal();
+            $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
+            $queryBuilderProphecy->expr()->willReturn($exprProphecy->reveal())->shouldBeCalled();
+            $queryBuilderProphecy->andWhere($comparison)->shouldBeCalled();
+            $queryBuilderProphecy->setParameter(':id_id', 1)->shouldBeCalled();
+
+            return $queryBuilderProphecy->reveal();
+        };
+
+        $queryBuilder = $createQueryBuilder();
 
         list($propertyNameCollectionFactory, $propertyMetadataFactory) = $this->getMetadataFactories(Dummy::class, [
             'id',
@@ -167,12 +194,17 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
             ],
         ], $queryBuilder);
 
-        $extensionProphecy = $this->prophesize(QueryResultItemExtensionInterface::class);
-        $extensionProphecy->applyToItem($queryBuilder, Argument::type(QueryNameGeneratorInterface::class), Dummy::class, ['id' => 1], 'foo', [])->shouldBeCalled();
-        $extensionProphecy->supportsResult(Dummy::class, 'foo')->willReturn(true)->shouldBeCalled();
-        $extensionProphecy->getResult($queryBuilder)->willReturn([])->shouldBeCalled();
+        $createExtension = function() use ($queryBuilder) {
+            $extensionProphecy = $this->prophesize(QueryResultItemExtensionInterface::class);
+            $extensionProphecy->applyToItem($queryBuilder, Argument::type(QueryNameGeneratorInterface::class), Dummy::class, ['id' => 1], 'foo', [])->shouldBeCalled();
+            $extensionProphecy->supportsResult(Dummy::class, 'foo')->willReturn(true)->shouldBeCalled();
+            $extensionProphecy->getResult($queryBuilder)->willReturn([])->shouldBeCalled();
 
-        $dataProvider = new ItemDataProvider($managerRegistry, $propertyNameCollectionFactory, $propertyMetadataFactory, [$extensionProphecy->reveal()]);
+            return $extensionProphecy->reveal();
+        };
+
+
+        $dataProvider = new ItemDataProvider($managerRegistry, $propertyNameCollectionFactory, $propertyMetadataFactory, [$createExtension()]);
 
         $this->assertEquals([], $dataProvider->getItem(Dummy::class, 1, 'foo'));
     }
@@ -201,25 +233,31 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
      */
     public function testCannotCreateQueryBuilder()
     {
-        $repositoryProphecy = $this->prophesize(ObjectRepository::class);
-        $classMetadataProphecy = $this->prophesize(ClassMetadata::class);
-        $classMetadataProphecy->getIdentifier()->willReturn([
-            'id',
-        ]);
-        $classMetadataProphecy->getTypeOfField('id')->willReturn(DBALType::INTEGER);
 
-        $platformProphecy = $this->prophesize(AbstractPlatform::class);
 
-        $connectionProphecy = $this->prophesize(Connection::class);
-        $connectionProphecy->getDatabasePlatform()->willReturn($platformProphecy);
+        $createManagerRegistry = function() {
+            $repositoryProphecy = $this->prophesize(ObjectRepository::class);
+            $classMetadataProphecy = $this->prophesize(ClassMetadata::class);
+            $classMetadataProphecy->getIdentifier()->willReturn([
+                'id',
+            ]);
+            $classMetadataProphecy->getTypeOfField('id')->willReturn(DBALType::INTEGER);
 
-        $managerProphecy = $this->prophesize(EntityManagerInterface::class);
-        $managerProphecy->getClassMetadata(Dummy::class)->willReturn($classMetadataProphecy->reveal());
-        $managerProphecy->getConnection()->willReturn($connectionProphecy);
-        $managerProphecy->getRepository(Dummy::class)->willReturn($repositoryProphecy->reveal());
+            $platformProphecy = $this->prophesize(AbstractPlatform::class);
 
-        $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
-        $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn($managerProphecy->reveal());
+            $connectionProphecy = $this->prophesize(Connection::class);
+            $connectionProphecy->getDatabasePlatform()->willReturn($platformProphecy);
+
+            $managerProphecy = $this->prophesize(EntityManagerInterface::class);
+            $managerProphecy->getClassMetadata(Dummy::class)->willReturn($classMetadataProphecy->reveal());
+            $managerProphecy->getConnection()->willReturn($connectionProphecy);
+            $managerProphecy->getRepository(Dummy::class)->willReturn($repositoryProphecy->reveal());
+
+            $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
+            $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn($managerProphecy->reveal());
+
+            return $managerRegistryProphecy->reveal();
+        };
 
         $extensionProphecy = $this->prophesize(QueryItemExtensionInterface::class);
 
@@ -227,7 +265,7 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
             'id',
         ]);
 
-        (new ItemDataProvider($managerRegistryProphecy->reveal(), $propertyNameCollectionFactory, $propertyMetadataFactory, [$extensionProphecy->reveal()]))->getItem(Dummy::class, 'foo');
+        (new ItemDataProvider($createManagerRegistry(), $propertyNameCollectionFactory, $propertyMetadataFactory, [$extensionProphecy->reveal()]))->getItem(Dummy::class, 'foo');
     }
 
     /**

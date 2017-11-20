@@ -29,16 +29,28 @@ class QueryJoinParserTest extends \PHPUnit_Framework_TestCase
 
     public function testGetClassMetadataFromJoinAlias()
     {
-        $queryBuilder = $this->prophesize(QueryBuilder::class);
-        $queryBuilder->getRootEntities()->willReturn(['Dummy']);
-        $queryBuilder->getRootAliases()->willReturn(['d']);
-        $queryBuilder->getDQLPart('join')->willReturn(['a_1' => new Join('INNER_JOIN', 'relatedDummy', 'a_1', null, 'a_1.name = r.name')]);
+        $createQueryBuilder = function() {
+            $queryBuilder = $this->prophesize(QueryBuilder::class);
+            $queryBuilder->getRootEntities()->willReturn(['Dummy']);
+            $queryBuilder->getRootAliases()->willReturn(['d']);
+            $queryBuilder->getDQLPart('join')->willReturn(['a_1' => new Join('INNER_JOIN', 'relatedDummy', 'a_1', null, 'a_1.name = r.name')]);
+
+            return $queryBuilder->reveal();
+        };
+
         $classMetadata = $this->prophesize(ClassMetadata::class);
-        $objectManager = $this->prophesize(ObjectManager::class);
-        $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata->reveal());
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
-        $metadata = QueryJoinParser::getClassMetadataFromJoinAlias('a_1', $queryBuilder->reveal(), $managerRegistry->reveal());
+
+        $createManagerRegistry = function() use ($classMetadata) {
+
+            $objectManager = $this->prophesize(ObjectManager::class);
+            $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata->reveal());
+            $managerRegistry = $this->prophesize(ManagerRegistry::class);
+            $managerRegistry->getManagerForClass('Dummy')->willReturn($objectManager->reveal());
+
+            return $managerRegistry->reveal();
+        };
+
+        $metadata = QueryJoinParser::getClassMetadataFromJoinAlias('a_1', $createQueryBuilder(), $createManagerRegistry());
         $this->assertEquals($metadata, $classMetadata->reveal());
     }
 

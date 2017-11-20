@@ -64,20 +64,31 @@ class CollectionNormalizerTest extends \PHPUnit_Framework_TestCase
 
     public function testNormalizePaginator()
     {
-        $paginatorProphecy = $this->prophesize(PaginatorInterface::class);
-        $paginatorProphecy->getCurrentPage()->willReturn(3);
-        $paginatorProphecy->getLastPage()->willReturn(7);
-        $paginatorProphecy->getItemsPerPage()->willReturn(12);
-        $paginatorProphecy->getTotalItems()->willReturn(1312);
-        $paginatorProphecy->rewind()->shouldBeCalled();
-        $paginatorProphecy->valid()->willReturn(true, false)->shouldBeCalled();
-        $paginatorProphecy->current()->willReturn('foo')->shouldBeCalled();
-        $paginatorProphecy->next()->willReturn()->shouldBeCalled();
-        $paginator = $paginatorProphecy->reveal();
-        $serializer = $this->prophesize(SerializerInterface::class);
-        $serializer->willImplement(NormalizerInterface::class);
-        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
-        $resourceClassResolverProphecy->getResourceClass($paginator, null, true)->willReturn('Foo')->shouldBeCalled();
+        $createPaginator = function() {
+            $paginatorProphecy = $this->prophesize(PaginatorInterface::class);
+            $paginatorProphecy->getCurrentPage()->willReturn(3);
+            $paginatorProphecy->getLastPage()->willReturn(7);
+            $paginatorProphecy->getItemsPerPage()->willReturn(12);
+            $paginatorProphecy->getTotalItems()->willReturn(1312);
+            $paginatorProphecy->rewind()->shouldBeCalled();
+            $paginatorProphecy->valid()->willReturn(true, false)->shouldBeCalled();
+            $paginatorProphecy->current()->willReturn('foo')->shouldBeCalled();
+            $paginatorProphecy->next()->willReturn()->shouldBeCalled();
+
+            return $paginatorProphecy->reveal();
+        };
+
+        $paginator = $createPaginator();
+
+        $createResourceClassResolver = function() use ($paginator) {
+
+            $serializer = $this->prophesize(SerializerInterface::class);
+            $serializer->willImplement(NormalizerInterface::class);
+            $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+            $resourceClassResolverProphecy->getResourceClass($paginator, null, true)->willReturn('Foo')->shouldBeCalled();
+
+            return $resourceClassResolverProphecy->reveal();
+        };
 
         $iriConvert = $this->prophesize(IriConverterInterface::class);
         $contextBuilder = $this->prophesize(ContextBuilderInterface::class);
@@ -85,7 +96,7 @@ class CollectionNormalizerTest extends \PHPUnit_Framework_TestCase
         $iriConvert->getIriFromResourceClass('Foo')->willReturn('/foo/1');
         $itemNormalizer = $this->prophesize(AbstractItemNormalizer::class);
         $itemNormalizer->normalize('foo', null, ['jsonld_has_context' => true, 'api_sub_level' => true, 'resource_class' => 'Foo'])->willReturn(['name' => 'Kévin', 'friend' => 'Smail']);
-        $normalizer = new CollectionNormalizer($contextBuilder->reveal(), $resourceClassResolverProphecy->reveal(), $iriConvert->reveal());
+        $normalizer = new CollectionNormalizer($contextBuilder->reveal(), $createResourceClassResolver(), $iriConvert->reveal());
 
         $normalizer->setNormalizer($itemNormalizer->reveal());
 

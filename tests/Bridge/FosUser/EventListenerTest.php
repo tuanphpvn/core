@@ -35,13 +35,18 @@ class EventListenerTest extends \PHPUnit_Framework_TestCase
         $manager = $this->prophesize(UserManagerInterface::class);
         $manager->deleteUser($user)->shouldBeCalled();
 
-        $event = $this->prophesize(GetResponseForControllerResultEvent::class);
-        $event->getControllerResult()->willReturn($user)->shouldBeCalled();
-        $event->getRequest()->willReturn($request)->shouldBeCalled();
-        $event->setControllerResult(null)->shouldBeCalled();
+        $createEvent = function() use ($request, $user) {
+            $event = $this->prophesize(GetResponseForControllerResultEvent::class);
+            $event->getControllerResult()->willReturn($user)->shouldBeCalled();
+            $event->getRequest()->willReturn($request)->shouldBeCalled();
+            $event->setControllerResult(null)->shouldBeCalled();
+
+            return $event->reveal();
+        };
+
 
         $listener = new EventListener($manager->reveal());
-        $listener->onKernelView($event->reveal());
+        $listener->onKernelView($createEvent());
     }
 
     public function testUpdate()
@@ -54,13 +59,18 @@ class EventListenerTest extends \PHPUnit_Framework_TestCase
         $manager = $this->prophesize(UserManagerInterface::class);
         $manager->updateUser($user)->shouldBeCalled();
 
-        $event = $this->prophesize(GetResponseForControllerResultEvent::class);
-        $event->getControllerResult()->willReturn($user)->shouldBeCalled();
-        $event->getRequest()->willReturn($request)->shouldBeCalled();
-        $event->setControllerResult()->shouldNotBeCalled();
+        $createEvent = function() use ($user, $request) {
+            $event = $this->prophesize(GetResponseForControllerResultEvent::class);
+            $event->getControllerResult()->willReturn($user)->shouldBeCalled();
+            $event->getRequest()->willReturn($request)->shouldBeCalled();
+            $event->setControllerResult()->shouldNotBeCalled();
+
+            return $event->reveal();
+        };
+
 
         $listener = new EventListener($manager->reveal());
-        $listener->onKernelView($event->reveal());
+        $listener->onKernelView($createEvent());
     }
 
     public function testNotApiRequest()
