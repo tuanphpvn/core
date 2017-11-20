@@ -356,7 +356,7 @@ class EagerLoadingExtensionTest extends \PHPUnit_Framework_TestCase
         $eagerExtensionTest = new EagerLoadingExtension($propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal(),
             /** $maxJoin */30, /** $forceEager */false, /** $requestStack */null, /** $serializerContextBuilder */null, /** $classMetaDataFactory */true);
 
-        $eagerExtensionTest->applyToItem($createQueryBuilder(), new QueryNameGenerator(), RelatedDummy::class, ['id' => 1], 'item_operation', ['resource_class' => Dummy::class]);
+        $eagerExtensionTest->applyToItem($createQueryBuilder(), new QueryNameGenerator(), RelatedDummy::class, /** $identifiers[] */['id' => 1], /** $operationName */'item_operation', /** $context */['resource_class' => Dummy::class]);
     }
 
     public function testDenormalizeItemWithExistingGroups()
@@ -543,6 +543,7 @@ class EagerLoadingExtensionTest extends \PHPUnit_Framework_TestCase
 
         $eagerExtensionTest = new EagerLoadingExtension($createPropertyNameCollectionFactory(), $createPropertyMetadataFactory(), $createResourceMetadataFactory(),
             /** $maxJoins */30, /** $forceEager */false, /** $requestStack */null, /** $serializerContextBuilder */null, /** $fetchPartial */true, $createClassMetadataFactory());
+
         $eagerExtensionTest->applyToCollection($createQueryBuilder(), new QueryNameGenerator(), Dummy::class);
     }
 
@@ -647,6 +648,7 @@ class EagerLoadingExtensionTest extends \PHPUnit_Framework_TestCase
 
         $orderExtensionTest = new EagerLoadingExtension($createPropertyNameCollectionFactory(), $createPropertyMetadataFactory(), $createResourceMetadataFactory(),
             /** $maxJoins */30, /** $forceEager */true, /** $requestStack */null, /** $serializerContextBuilder */null, /** $fetchPartial */true);
+
         $orderExtensionTest->applyToItem($createQueryBuilder(), new QueryNameGenerator(), Dummy::class, []);
     }
 
@@ -688,6 +690,7 @@ class EagerLoadingExtensionTest extends \PHPUnit_Framework_TestCase
 
         $orderExtensionTest = new EagerLoadingExtension($createPropertyNameCollectionFactory(), $createPropertyMetadataFactory(), $createResourceMetadataFactory(),
             /** $maxJoins */30, /** $forceEager */true, /** $requestStack */null, /** $serializerContextBuilder */null, /** $fetchPartial */true);
+
         $orderExtensionTest->applyToItem($createQueryBuilder(), new QueryNameGenerator(), Dummy::class, []);
     }
 
@@ -736,6 +739,7 @@ class EagerLoadingExtensionTest extends \PHPUnit_Framework_TestCase
 
         $orderExtensionTest = new EagerLoadingExtension($createPropertyNameCollectionFactory(), $createPropertyMetadataFactory(), $createResourceMetadataFactory(),
             /** $maxJoins */30, /** $forceEager */true, /** $requestStack */null, /** $serializerContextBuilder */null, /** $fetchPartial */true);
+
         $orderExtensionTest->applyToItem($createQueryBuilder(), new QueryNameGenerator(), Dummy::class, []);
     }
 
@@ -830,6 +834,7 @@ class EagerLoadingExtensionTest extends \PHPUnit_Framework_TestCase
 
         $eagerExtensionTest = new EagerLoadingExtension($createPropertyNameCollectionFactory(), $createPropertyMetadataFactory(), $createResourceMetadataFactory(),
             /** $maxJoins */30, /** $forceEager */false, $createRequestStack(), $createSerializerContextBuilder(), /** $fetchPartial */true);
+
         $eagerExtensionTest->applyToCollection($createQueryBuilder(), new QueryNameGenerator(), Dummy::class);
     }
 
@@ -887,6 +892,7 @@ class EagerLoadingExtensionTest extends \PHPUnit_Framework_TestCase
         };
 
         $eagerExtensionTest = new EagerLoadingExtension($createPropertyNameCollectionFactory(), $createPropertyMetadataFactory(), $createResourceMetadataFactory(), /** $maxJoins */30);
+
         $eagerExtensionTest->applyToCollection($createQueryBuilder(), new QueryNameGenerator(), Dummy::class);
     }
 
@@ -904,11 +910,6 @@ class EagerLoadingExtensionTest extends \PHPUnit_Framework_TestCase
 
             return $propertyNameCollectionFactoryProphecy->reveal();
         };
-
-
-
-
-        $relatedNameCollection = new PropertyNameCollection(['id', 'name', 'notindatabase', 'notreadable']);
 
         $createPropertyMetadataFactory = function() {
 
@@ -952,6 +953,7 @@ class EagerLoadingExtensionTest extends \PHPUnit_Framework_TestCase
         };
 
         $eagerExtensionTest = new EagerLoadingExtension($createPropertyNameCollectionFactory(), $createPropertyMetadataFactory(), $createResourceMetadataFactory(), /** $maxJoins */30);
+
         $eagerExtensionTest->applyToCollection($createQueryBuilder(), new QueryNameGenerator(), Dummy::class);
     }
 }
