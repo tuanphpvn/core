@@ -60,21 +60,24 @@ class BooleanFilterTest extends KernelTestCase
      */
     public function testApply($properties, array $filterParameters, string $expected)
     {
-        $request = Request::create('/api/dummies', 'GET', $filterParameters);
-
-        $requestStack = new RequestStack();
-        $requestStack->push($request);
-
         $queryBuilder = $this->repository->createQueryBuilder('o');
 
-        $filter = new BooleanFilter(
-            $this->managerRegistry,
-            $requestStack,
-            null,
-            $properties
-        );
+        $createFilter = function() use ($properties, $filterParameters) {
 
-        $filter->apply($queryBuilder, new QueryNameGenerator(), $this->resourceClass);
+            $request = Request::create(/** $uri */'/api/dummies', /** $method */'GET', /** $parameters */$filterParameters);
+
+            $requestStack = new RequestStack();
+            $requestStack->push($request);
+
+            return new BooleanFilter(
+                $this->managerRegistry,
+                $requestStack,
+                /** $logger */null,
+                $properties
+            );
+        };
+
+        $createFilter()->apply($queryBuilder, new QueryNameGenerator(), $this->resourceClass);
         $actual = $queryBuilder->getQuery()->getDQL();
 
         $this->assertEquals($expected, $actual);
@@ -216,7 +219,7 @@ class BooleanFilterTest extends KernelTestCase
                     'dummyBoolean' => null,
                 ],
                 [
-                    'name' => '0',
+                    'name' => '0', /** name is not boolean type */
                 ],
                 sprintf('SELECT o FROM %s o', Dummy::class),
             ],

@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace ApiPlatform\Core\Tests\Bridge\Doctrine\Orm\Extension;
 
@@ -29,12 +29,10 @@ class OrderExtensionTest extends \PHPUnit_Framework_TestCase
 {
     public function testApplyToCollectionWithValidOrder()
     {
+        $createQueryBuilder = function () {
+            $qbProphecy = $this->prophesize(QueryBuilder::class);
 
-
-        $createQueryBuilder = function() {
-            $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
-
-            $queryBuilderProphecy->addOrderBy('o.name', 'asc')->shouldBeCalled();
+            $qbProphecy->addOrderBy('o.name', 'asc')->shouldBeCalled();
 
             $classMetadataProphecy = $this->prophesize(ClassMetadata::class);
             $classMetadataProphecy->getIdentifier()->shouldBeCalled()->willReturn(['name']);
@@ -42,21 +40,23 @@ class OrderExtensionTest extends \PHPUnit_Framework_TestCase
             $emProphecy = $this->prophesize(EntityManager::class);
             $emProphecy->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadataProphecy->reveal());
 
-            $queryBuilderProphecy->getEntityManager()->shouldBeCalled()->willReturn($emProphecy->reveal());
+            $qbProphecy->getEntityManager()->shouldBeCalled()->willReturn($emProphecy->reveal());
 
-            return $queryBuilderProphecy->reveal();
+            return $qbProphecy->reveal();
         };
 
-        $orderExtensionTest = new OrderExtension('asc');
-        $orderExtensionTest->applyToCollection($createQueryBuilder(), new QueryNameGenerator(), Dummy::class);
+        $orderExtensionTest = new OrderExtension(/** $order */
+            'asc');
+        $orderExtensionTest->applyToCollection($createQueryBuilder(), new QueryNameGenerator(), /** $resourceClass */
+            Dummy::class);
     }
 
     public function testApplyToCollectionWithWrongOrder()
     {
-        $createQueryBuilder = function() {
-            $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
+        $createQueryBuilder = function () {
+            $qbProphecy = $this->prophesize(QueryBuilder::class);
 
-            $queryBuilderProphecy->addOrderBy('o.name', 'asc')->shouldNotBeCalled();
+            $qbProphecy->addOrderBy('o.name', 'asc')->shouldNotBeCalled();
 
             $classMetadataProphecy = $this->prophesize(ClassMetadata::class);
             $classMetadataProphecy->getIdentifier()->shouldBeCalled()->willReturn(['name']);
@@ -64,9 +64,9 @@ class OrderExtensionTest extends \PHPUnit_Framework_TestCase
             $emProphecy = $this->prophesize(EntityManager::class);
             $emProphecy->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadataProphecy->reveal());
 
-            $queryBuilderProphecy->getEntityManager()->shouldBeCalled()->willReturn($emProphecy->reveal());
+            $qbProphecy->getEntityManager()->shouldBeCalled()->willReturn($emProphecy->reveal());
 
-            return $queryBuilderProphecy->reveal();
+            return $qbProphecy->reveal();
         };
 
         $orderExtensionTest = new OrderExtension();
@@ -74,20 +74,27 @@ class OrderExtensionTest extends \PHPUnit_Framework_TestCase
         $orderExtensionTest->applyToCollection($createQueryBuilder(), new QueryNameGenerator(), Dummy::class);
     }
 
-    public function testApplyToCollectionWithOrderOverriden()
+    public function testApplyToCollectionWithOrderOverridden()
     {
-        $createResourceMetadataFactory = function() {
+        $createResourceMetadataFactory = function () {
             $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-            $resourceMetadataFactoryProphecy->create(Dummy::class)->shouldBeCalled()->willReturn(new ResourceMetadata(null, null, null, null, null, ['order' => ['foo' => 'DESC']]));
+            $resourceMetadataFactoryProphecy->create(Dummy::class)->shouldBeCalled()->willReturn(new ResourceMetadata(
+                    /** $shortName */ null,
+                    /** $description */ null,
+                    /** $iri */ null,
+                    /** $itemOperations */ null,
+                    /** $collectionOperations */ null,
+                    /** $attributes */ ['order' => ['foo' => 'DESC']])
+            );
 
             return $resourceMetadataFactoryProphecy->reveal();
         };
 
-        $createQueryBuilder = function() {
+        $createQueryBuilder = function () {
 
-            $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
+            $qbProphecy = $this->prophesize(QueryBuilder::class);
 
-            $queryBuilderProphecy->addOrderBy('o.foo', 'DESC')->shouldBeCalled();
+            $qbProphecy->addOrderBy('o.foo', 'DESC')->shouldBeCalled();
 
             $classMetadataProphecy = $this->prophesize(ClassMetadata::class);
             $classMetadataProphecy->getIdentifier()->shouldBeCalled()->willReturn(['name']);
@@ -95,47 +102,51 @@ class OrderExtensionTest extends \PHPUnit_Framework_TestCase
             $emProphecy = $this->prophesize(EntityManager::class);
             $emProphecy->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadataProphecy->reveal());
 
-            $queryBuilderProphecy->getEntityManager()->shouldBeCalled()->willReturn($emProphecy->reveal());
+            $qbProphecy->getEntityManager()->shouldBeCalled()->willReturn($emProphecy->reveal());
 
-            return $queryBuilderProphecy->reveal();
+            return $qbProphecy->reveal();
         };
 
         $orderExtensionTest = new OrderExtension('asc', $createResourceMetadataFactory());
         $orderExtensionTest->applyToCollection($createQueryBuilder(), new QueryNameGenerator(), Dummy::class);
     }
 
-    public function testApplyToCollectionWithOrderOverridenWithNoDirection()
+    public function testApplyToCollectionWithOrderOverriddenWithNoDirection()
     {
 
-        $createResourcMetadataFactory = function() {
+        $createResourceMetadataFactory = function () {
             $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-            $resourceMetadataFactoryProphecy->create(Dummy::class)->shouldBeCalled()->willReturn(new ResourceMetadata(null, null, null, null, null, ['order' => ['foo', 'bar' => 'DESC']]));
+            $resourceMetadataFactoryProphecy->create(Dummy::class)->shouldBeCalled()->willReturn(new ResourceMetadata(
+                /** $shortName */null,
+                /** $description */null,
+                /** $iri */null,
+                /** $itemOperations */null,
+                /** $collectionOperations */null,
+                /** $attributes */['order' => ['foo', 'bar' => 'DESC']]));
 
             return $resourceMetadataFactoryProphecy->reveal();
         };
 
+        $createQueryBuilder = function () {
 
-        $createQueryBuilder = function() {
+            $qbProphecy = $this->prophesize(QueryBuilder::class);
 
-            $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
-
-            $queryBuilderProphecy->addOrderBy('o.foo', 'ASC')->shouldBeCalled();
-            $queryBuilderProphecy->addOrderBy('o.bar', 'DESC')->shouldBeCalled();
+            $qbProphecy->addOrderBy('o.foo', 'ASC')->shouldBeCalled();
+            $qbProphecy->addOrderBy('o.bar', 'DESC')->shouldBeCalled();
 
             $classMetadataProphecy = $this->prophesize(ClassMetadata::class);
             $classMetadataProphecy->getIdentifier()->shouldBeCalled()->willReturn(['name']);
 
 
-
             $emProphecy = $this->prophesize(EntityManager::class);
             $emProphecy->getClassMetadata(Dummy::class)->shouldBeCalled()->willReturn($classMetadataProphecy->reveal());
 
-            $queryBuilderProphecy->getEntityManager()->shouldBeCalled()->willReturn($emProphecy->reveal());
+            $qbProphecy->getEntityManager()->shouldBeCalled()->willReturn($emProphecy->reveal());
 
-            return $queryBuilderProphecy->reveal();
+            return $qbProphecy->reveal();
         };
 
-        $orderExtensionTest = new OrderExtension('asc', $createResourcMetadataFactory());
+        $orderExtensionTest = new OrderExtension('asc', $createResourceMetadataFactory());
         $orderExtensionTest->applyToCollection($createQueryBuilder(), new QueryNameGenerator(), Dummy::class);
     }
 }

@@ -49,7 +49,7 @@ final class FilterExtension implements QueryCollectionExtensionInterface
     public function applyToCollection(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null)
     {
         $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
-        $resourceFilters = $resourceMetadata->getCollectionOperationAttribute($operationName, 'filters', [], true);
+        $resourceFilters = $resourceMetadata->getCollectionOperationAttribute($operationName, /** $keys */'filters', /** $defaultValue */[], /** $resourceFallback */true);
 
         if (empty($resourceFilters)) {
             return;

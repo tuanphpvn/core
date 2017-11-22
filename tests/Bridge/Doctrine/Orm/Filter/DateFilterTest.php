@@ -50,9 +50,9 @@ class DateFilterTest extends KernelTestCase
     protected function setUp()
     {
         self::bootKernel();
-        $manager = DoctrineTestHelper::createTestEntityManager();
+        $entityManager = DoctrineTestHelper::createTestEntityManager();
         $this->managerRegistry = self::$kernel->getContainer()->get('doctrine');
-        $this->repository = $manager->getRepository(Dummy::class);
+        $this->repository = $entityManager->getRepository(Dummy::class);
         $this->resourceClass = Dummy::class;
     }
 
@@ -61,21 +61,27 @@ class DateFilterTest extends KernelTestCase
      */
     public function testApply($properties, array $filterParameters, string $expected)
     {
-        $request = Request::create('/api/dummies', 'GET', $filterParameters);
-
-        $requestStack = new RequestStack();
-        $requestStack->push($request);
-
         $queryBuilder = $this->repository->createQueryBuilder('o');
 
-        $filter = new DateFilter(
-            $this->managerRegistry,
-            $requestStack,
-            null,
-            $properties
-        );
+        if(isset($properties['dummyDate']) && 'include_null_after' === $properties['dummyDate']) {
+            xdebug_break();
+        }
 
-        $filter->apply($queryBuilder, new QueryNameGenerator(), $this->resourceClass);
+        $createFilter = function() use ($properties, $filterParameters) {
+
+            $request = Request::create('/api/dummies', 'GET', $filterParameters);
+            $requestStack = new RequestStack();
+            $requestStack->push($request);
+
+            return new DateFilter(
+                $this->managerRegistry,
+                $requestStack,
+                /** $logger */null,
+                $properties
+            );
+        };
+
+        $createFilter()->apply($queryBuilder, new QueryNameGenerator(), $this->resourceClass);
         $actual = $queryBuilder->getQuery()->getDQL();
 
         $this->assertEquals($expected, $actual);

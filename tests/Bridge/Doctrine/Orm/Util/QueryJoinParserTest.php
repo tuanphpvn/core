@@ -50,8 +50,8 @@ class QueryJoinParserTest extends \PHPUnit_Framework_TestCase
             return $managerRegistry->reveal();
         };
 
-        $metadata = QueryJoinParser::getClassMetadataFromJoinAlias('a_1', $createQueryBuilder(), $createManagerRegistry());
-        $this->assertEquals($metadata, $classMetadata->reveal());
+        $metadata = QueryJoinParser::getClassMetadataFromJoinAlias(/** $alias */'a_1', $createQueryBuilder(), $createManagerRegistry());
+        $this->assertEquals($classMetadata->reveal(), $metadata);
     }
 
     public function testGetJoinRelationshipWithJoin()
@@ -70,7 +70,9 @@ class QueryJoinParserTest extends \PHPUnit_Framework_TestCase
     {
         $methodExist = $this->getFunctionMock('ApiPlatform\Core\Bridge\Doctrine\Orm\Util', 'method_exists');
         $methodExist->expects($this->any())->with(Join::class, 'getJoin')->willReturn('false');
+
         $join = new Join('INNER_JOIN', 'a_1.relatedDummy', 'a_1', null, 'a_1.name = r.name');
+
         $this->assertEquals('a_1.relatedDummy', QueryJoinParser::getJoinRelationship($join));
     }
 
@@ -90,6 +92,7 @@ class QueryJoinParserTest extends \PHPUnit_Framework_TestCase
     {
         $methodExist = $this->getFunctionMock('ApiPlatform\Core\Bridge\Doctrine\Orm\Util', 'method_exists');
         $methodExist->expects($this->any())->with(Join::class, 'getAlias')->willReturn('false');
+
         $join = new Join('INNER_JOIN', 'relatedDummy', 'a_1', null, 'a_1.name = r.name');
         $this->assertEquals('a_1', QueryJoinParser::getJoinAlias($join));
     }
@@ -104,6 +107,7 @@ class QueryJoinParserTest extends \PHPUnit_Framework_TestCase
     {
         $methodExist = $this->getFunctionMock('ApiPlatform\Core\Bridge\Doctrine\Orm\Util', 'method_exists');
         $methodExist->expects($this->any())->with(OrderBy::class, 'getParts')->willReturn('false');
+
         $orderBy = new OrderBy('name', 'desc');
         $this->assertEquals(['name desc'], QueryJoinParser::getOrderByParts($orderBy));
     }

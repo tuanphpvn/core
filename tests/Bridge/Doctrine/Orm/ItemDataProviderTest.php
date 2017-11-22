@@ -69,23 +69,25 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
         list($propertyNameCollectionFactory, $propertyMetadataFactory) = $this->getMetadataFactories(Dummy::class, [
             'id',
         ]);
-        $managerRegistry = $this->getManagerRegistry(Dummy::class, [
-            'id' => [
-                'type' => DBALType::INTEGER,
-            ],
-        ], $queryBuilder);
 
-        $createExtension = function() use ($queryBuilder, $context) {
+        $createManagerRegistry = function() use ($queryBuilder) {
+            return $this->getManagerRegistry(Dummy::class, [
+                'id' => [
+                    'type' => DBALType::INTEGER,
+                ],
+            ], $queryBuilder);
+        };
 
+        $createExtensions = function() use ($queryBuilder, $context) {
             $extensionProphecy = $this->prophesize(QueryItemExtensionInterface::class);
             $extensionProphecy->applyToItem($queryBuilder, Argument::type(QueryNameGeneratorInterface::class), Dummy::class, ['id' => 1], 'foo', $context)->shouldBeCalled();
 
             return $extensionProphecy->reveal();
         };
 
-        $dataProvider = new ItemDataProvider($managerRegistry, $propertyNameCollectionFactory, $propertyMetadataFactory, [$createExtension()]);
+        $itemDataProvider = new ItemDataProvider($createManagerRegistry(), $propertyNameCollectionFactory, $propertyMetadataFactory, [$createExtensions()]);
 
-        $this->assertEquals([], $dataProvider->getItem(Dummy::class, 1, 'foo', $context));
+        $this->assertEquals([], $itemDataProvider->getItem(Dummy::class, /** id */1, /** $operationName */'foo', $context));
     }
 
     public function testGetItemDoubleIdentifier()
@@ -114,7 +116,6 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
 
         $queryBuilder = $createQueryBuilder();
 
-
         list($propertyNameCollectionFactory, $propertyMetadataFactory) = $this->getMetadataFactories(Dummy::class, [
             'ida',
             'idb',
@@ -128,8 +129,6 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
             ],
         ], $queryBuilder);
 
-
-
         $createExtension = function() use ($queryBuilder) {
 
             $extensionProphecy = $this->prophesize(QueryItemExtensionInterface::class);
@@ -140,7 +139,7 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
 
         $dataProvider = new ItemDataProvider($managerRegistry, $propertyNameCollectionFactory, $propertyMetadataFactory, [$createExtension()]);
 
-        $this->assertEquals([], $dataProvider->getItem(Dummy::class, 'ida=1;idb=2', 'foo'));
+        $this->assertEquals([], $dataProvider->getItem(Dummy::class, /** $id */'ida=1;idb=2', /** $operationName */'foo'));
     }
 
     /**
@@ -162,12 +161,11 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
         ], $this->prophesize(QueryBuilder::class)->reveal());
 
         $dataProvider = new ItemDataProvider($managerRegistry, $propertyNameCollectionFactory, $propertyMetadataFactory);
-        $dataProvider->getItem(Dummy::class, 'ida=1;', 'foo');
+        $dataProvider->getItem(Dummy::class, /** $id */'ida=1;', /** $operationName */'foo');
     }
 
-    public function testQueryResultExtension()
+    public function testWithQueryResultItemExtension()
     {
-
         $createQueryBuilder = function() {
             $comparisonProphecy = $this->prophesize(Comparison::class);
             $comparison = $comparisonProphecy->reveal();
@@ -194,7 +192,7 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
             ],
         ], $queryBuilder);
 
-        $createExtension = function() use ($queryBuilder) {
+        $createExtensions = function() use ($queryBuilder) {
             $extensionProphecy = $this->prophesize(QueryResultItemExtensionInterface::class);
             $extensionProphecy->applyToItem($queryBuilder, Argument::type(QueryNameGeneratorInterface::class), Dummy::class, ['id' => 1], 'foo', [])->shouldBeCalled();
             $extensionProphecy->supportsResult(Dummy::class, 'foo')->willReturn(true)->shouldBeCalled();
@@ -203,10 +201,9 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
             return $extensionProphecy->reveal();
         };
 
+        $dataProvider = new ItemDataProvider($managerRegistry, $propertyNameCollectionFactory, $propertyMetadataFactory, [$createExtensions()]);
 
-        $dataProvider = new ItemDataProvider($managerRegistry, $propertyNameCollectionFactory, $propertyMetadataFactory, [$createExtension()]);
-
-        $this->assertEquals([], $dataProvider->getItem(Dummy::class, 1, 'foo'));
+        $this->assertEquals([], $dataProvider->getItem(Dummy::class, /** $id */1, /** $operationName */'foo'));
     }
 
     /**
@@ -214,16 +211,24 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
      */
     public function testThrowResourceClassNotSupportedException()
     {
-        $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
-        $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn(null)->shouldBeCalled();
+        $createManagerRegistry = function() {
+            $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
+            $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn(null)->shouldBeCalled();
 
-        $extensionProphecy = $this->prophesize(QueryItemExtensionInterface::class);
+            return $managerRegistryProphecy->reveal();
+        };
+
+        $createExtensions = function() {
+            $extensionProphecy = $this->prophesize(QueryItemExtensionInterface::class);
+
+            return $extensionProphecy->reveal();
+        };
 
         list($propertyNameCollectionFactory, $propertyMetadataFactory) = $this->getMetadataFactories(Dummy::class, [
             'id',
         ]);
 
-        $dataProvider = new ItemDataProvider($managerRegistryProphecy->reveal(), $propertyNameCollectionFactory, $propertyMetadataFactory, [$extensionProphecy->reveal()]);
+        $dataProvider = new ItemDataProvider($createManagerRegistry(), $propertyNameCollectionFactory, $propertyMetadataFactory, [$createExtensions()]);
         $dataProvider->getItem(Dummy::class, 'foo');
     }
 
@@ -233,8 +238,6 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
      */
     public function testCannotCreateQueryBuilder()
     {
-
-
         $createManagerRegistry = function() {
             $repositoryProphecy = $this->prophesize(ObjectRepository::class);
             $classMetadataProphecy = $this->prophesize(ClassMetadata::class);
@@ -259,13 +262,18 @@ class ItemDataProviderTest extends \PHPUnit_Framework_TestCase
             return $managerRegistryProphecy->reveal();
         };
 
-        $extensionProphecy = $this->prophesize(QueryItemExtensionInterface::class);
+        $createExtensions = function() {
+            $extensionProphecy = $this->prophesize(QueryItemExtensionInterface::class);
+
+            return $extensionProphecy->reveal();
+        };
 
         list($propertyNameCollectionFactory, $propertyMetadataFactory) = $this->getMetadataFactories(Dummy::class, [
             'id',
         ]);
 
-        (new ItemDataProvider($createManagerRegistry(), $propertyNameCollectionFactory, $propertyMetadataFactory, [$extensionProphecy->reveal()]))->getItem(Dummy::class, 'foo');
+        $itemDataProvider = new ItemDataProvider($createManagerRegistry(), $propertyNameCollectionFactory, $propertyMetadataFactory, [$createExtensions()]);
+        $itemDataProvider->getItem(Dummy::class, 'foo');
     }
 
     /**

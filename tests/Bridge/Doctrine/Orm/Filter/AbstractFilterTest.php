@@ -26,14 +26,17 @@ class AbstractFilterTest extends \PHPUnit_Framework_TestCase
 {
     public function testSplitPropertiesWithoutResourceClass()
     {
-        $managerRegistry = $this->prophesize(ManagerRegistry::class);
-        $requestStack = $this->prophesize(RequestStack::class);
+        /** @var ManagerRegistry $managerRegistry */
+        $managerRegistry = $this->prophesize(ManagerRegistry::class)->reveal();
 
-        $filter = new DummyFilter($managerRegistry->reveal(), $requestStack->reveal());
+        /** @var RequestStack $requestStack */
+        $requestStack = $this->prophesize(RequestStack::class)->reveal();
 
-        $this->assertEquals($filter->doSplitPropertiesWithoutResourceClass('foo.bar'), [
+        $filter = new DummyFilter($managerRegistry, $requestStack);
+
+        $this->assertEquals([
             'associations' => ['foo'],
             'field' => 'bar',
-        ]);
+        ], $filter->doSplitPropertiesWithoutResourceClass('foo.bar'));
     }
 }

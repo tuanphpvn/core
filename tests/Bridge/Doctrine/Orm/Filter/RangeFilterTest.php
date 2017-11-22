@@ -60,21 +60,23 @@ class RangeFilterTest extends KernelTestCase
      */
     public function testApply($properties, array $filterParameters, string $expected)
     {
-        $request = Request::create('/api/dummies', 'GET', $filterParameters);
-
-        $requestStack = new RequestStack();
-        $requestStack->push($request);
-
         $queryBuilder = $this->repository->createQueryBuilder('o');
 
-        $filter = new RangeFilter(
-            $this->managerRegistry,
-            $requestStack,
-            null,
-            $properties
-        );
+        $createFilter = function() use($properties, $filterParameters) {
+            $request = Request::create('/api/dummies', 'GET', $filterParameters);
 
-        $filter->apply($queryBuilder, new QueryNameGenerator(), $this->resourceClass);
+            $requestStack = new RequestStack();
+            $requestStack->push($request);
+
+            return new RangeFilter(
+                $this->managerRegistry,
+                $requestStack,
+                /** $logger */null,
+                $properties
+            );
+        };
+
+        $createFilter()->apply($queryBuilder, new QueryNameGenerator(), $this->resourceClass);
         $actual = $queryBuilder->getQuery()->getDQL();
 
         $this->assertEquals($expected, $actual);

@@ -59,7 +59,7 @@ class PaginatorTest extends \PHPUnit_Framework_TestCase
     public function initializeProvider()
     {
         return [
-            'First of three pages of 15 items each' => [0, 15, 42, 1, 3],
+            'First of three pages of 15 items each' => [/** $firstResult */0, /** $maxResults */15, /** $totalItems */42, /** $currentPage */1, /** $lastPage */3],
             'Second of two pages of 10 items each' => [10, 10, 20, 2, 2],
         ];
     }

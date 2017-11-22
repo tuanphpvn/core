@@ -33,55 +33,74 @@ class CollectionDataProviderTest extends \PHPUnit_Framework_TestCase
 {
     public function testGetCollection()
     {
-        $queryProphecy = $this->prophesize(AbstractQuery::class);
-        $queryProphecy->getResult()->willReturn([])->shouldBeCalled();
+        $createQueryBuilder = function() {
+            $queryProphecy = $this->prophesize(AbstractQuery::class);
+            $queryProphecy->getResult()->willReturn([])->shouldBeCalled();
 
-        $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
-        $queryBuilderProphecy->getQuery()->willReturn($queryProphecy->reveal())->shouldBeCalled();
-        $queryBuilder = $queryBuilderProphecy->reveal();
+            $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
+            $queryBuilderProphecy->getQuery()->willReturn($queryProphecy->reveal())->shouldBeCalled();
 
-        $repositoryProphecy = $this->prophesize(EntityRepository::class);
-        $repositoryProphecy->createQueryBuilder('o')->willReturn($queryBuilder)->shouldBeCalled();
+            return $queryBuilderProphecy->reveal();
+        };
+        $qb = $createQueryBuilder();
 
-        $managerProphecy = $this->prophesize(ObjectManager::class);
-        $managerProphecy->getRepository(Dummy::class)->willReturn($repositoryProphecy->reveal())->shouldBeCalled();
-
-        $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
-        $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn($managerProphecy->reveal())->shouldBeCalled();
-
-        $extensionProphecy = $this->prophesize(QueryCollectionExtensionInterface::class);
-        $extensionProphecy->applyToCollection($queryBuilder, Argument::type(QueryNameGeneratorInterface::class), Dummy::class, 'foo')->shouldBeCalled();
-
-        $dataProvider = new CollectionDataProvider($managerRegistryProphecy->reveal(), [$extensionProphecy->reveal()]);
-        $this->assertEquals([], $dataProvider->getCollection(Dummy::class, 'foo'));
-    }
-
-    public function testQueryResultExtension()
-    {
-        $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
-        $queryBuilder = $queryBuilderProphecy->reveal();
-
-        $repositoryProphecy = $this->prophesize(EntityRepository::class);
-        $repositoryProphecy->createQueryBuilder('o')->willReturn($queryBuilder)->shouldBeCalled();
-
-        $managerProphecy = $this->prophesize(ObjectManager::class);
-        $managerProphecy->getRepository(Dummy::class)->willReturn($repositoryProphecy->reveal())->shouldBeCalled();
-
-        $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
-        $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn($managerProphecy->reveal())->shouldBeCalled();
-
-        $createExtension = function() use ($queryBuilder) {
-            $extensionProphecy = $this->prophesize(QueryResultCollectionExtensionInterface::class);
-            $extensionProphecy->applyToCollection($queryBuilder, Argument::type(QueryNameGeneratorInterface::class), Dummy::class, 'foo')->shouldBeCalled();
-            $extensionProphecy->supportsResult(Dummy::class, 'foo')->willReturn(true)->shouldBeCalled();
-            $extensionProphecy->getResult($queryBuilder)->willReturn([])->shouldBeCalled();
+        $createExtensions = function() use ($qb) {
+            $extensionProphecy = $this->prophesize(QueryCollectionExtensionInterface::class);
+            $extensionProphecy->applyToCollection($qb, Argument::type(QueryNameGeneratorInterface::class), Dummy::class, 'foo')->shouldBeCalled();
 
             return $extensionProphecy->reveal();
         };
 
+        $createManagerRegistry = function() use($qb) {
+            $repositoryProphecy = $this->prophesize(EntityRepository::class);
+            $repositoryProphecy->createQueryBuilder('o')->willReturn($qb)->shouldBeCalled();
 
-        $dataProvider = new CollectionDataProvider($managerRegistryProphecy->reveal(), [$createExtension()]);
-        $this->assertEquals([], $dataProvider->getCollection(Dummy::class, 'foo'));
+            $managerProphecy = $this->prophesize(ObjectManager::class);
+            $managerProphecy->getRepository(Dummy::class)->willReturn($repositoryProphecy->reveal())->shouldBeCalled();
+
+            $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
+            $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn($managerProphecy->reveal())->shouldBeCalled();
+
+            return $managerRegistryProphecy->reveal();
+        };
+
+        $dataProvider = new CollectionDataProvider($createManagerRegistry(), [$createExtensions()]);
+        $this->assertEquals([], $dataProvider->getCollection(Dummy::class, /** $operationName */'foo'));
+    }
+
+    public function testWithQueryResultCollectionExtension()
+    {
+        $createQueryBuilder = function() {
+            $queryBuilderProphecy = $this->prophesize(QueryBuilder::class);
+            return $queryBuilderProphecy->reveal();
+        };
+
+        $qb = $createQueryBuilder();
+
+        $createManagerRegistry = function() use ($qb) {
+            $repositoryProphecy = $this->prophesize(EntityRepository::class);
+            $repositoryProphecy->createQueryBuilder('o')->willReturn($qb)->shouldBeCalled();
+
+            $managerProphecy = $this->prophesize(ObjectManager::class);
+            $managerProphecy->getRepository(Dummy::class)->willReturn($repositoryProphecy->reveal())->shouldBeCalled();
+
+            $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
+            $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn($managerProphecy->reveal())->shouldBeCalled();
+
+            return $managerRegistryProphecy->reveal();
+        };
+
+        $createExtensions = function() use ($qb) {
+            $extensionProphecy = $this->prophesize(QueryResultCollectionExtensionInterface::class);
+            $extensionProphecy->applyToCollection($qb, Argument::type(QueryNameGeneratorInterface::class), Dummy::class, 'foo')->shouldBeCalled();
+            $extensionProphecy->supportsResult(Dummy::class, 'foo')->willReturn(true)->shouldBeCalled();
+            $extensionProphecy->getResult($qb)->willReturn([])->shouldBeCalled();
+
+            return $extensionProphecy->reveal();
+        };
+
+        $dataProvider = new CollectionDataProvider($createManagerRegistry(), [$createExtensions()]);
+        $this->assertEquals([], $dataProvider->getCollection(Dummy::class, /** $operationName */'foo'));
     }
 
     /**
@@ -90,16 +109,20 @@ class CollectionDataProviderTest extends \PHPUnit_Framework_TestCase
      */
     public function testCannotCreateQueryBuilder()
     {
-        $repositoryProphecy = $this->prophesize(ObjectRepository::class);
+        $createManagerRegistry = function() {
+            $repositoryProphecy = $this->prophesize(ObjectRepository::class);
 
-        $managerProphecy = $this->prophesize(ObjectManager::class);
-        $managerProphecy->getRepository(Dummy::class)->willReturn($repositoryProphecy->reveal())->shouldBeCalled();
+            $managerProphecy = $this->prophesize(ObjectManager::class);
+            $managerProphecy->getRepository(Dummy::class)->willReturn($repositoryProphecy->reveal())->shouldBeCalled();
 
-        $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
-        $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn($managerProphecy->reveal())->shouldBeCalled();
+            $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
+            $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn($managerProphecy->reveal())->shouldBeCalled();
 
-        $dataProvider = new CollectionDataProvider($managerRegistryProphecy->reveal());
-        $this->assertEquals([], $dataProvider->getCollection(Dummy::class, 'foo'));
+            return $managerRegistryProphecy->reveal();
+        };
+
+        $dataProvider = new CollectionDataProvider($createManagerRegistry());
+        $this->assertEquals([], $dataProvider->getCollection(Dummy::class, /** $operationName */'foo'));
     }
 
     /**
@@ -107,12 +130,20 @@ class CollectionDataProviderTest extends \PHPUnit_Framework_TestCase
      */
     public function testThrowResourceClassNotSupportedException()
     {
-        $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
-        $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn(null)->shouldBeCalled();
+        $createManagerRegistry = function() {
+            $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
+            $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn(null)->shouldBeCalled();
 
-        $extensionProphecy = $this->prophesize(QueryResultCollectionExtensionInterface::class);
+            return $managerRegistryProphecy->reveal();
+        };
 
-        $dataProvider = new CollectionDataProvider($managerRegistryProphecy->reveal(), [$extensionProphecy->reveal()]);
+        $createExtensions = function() {
+            $extensionProphecy = $this->prophesize(QueryResultCollectionExtensionInterface::class);
+
+            return $extensionProphecy->reveal();
+        };
+
+        $dataProvider = new CollectionDataProvider($createManagerRegistry(), [$createExtensions()]);
         $dataProvider->getCollection(Dummy::class, 'foo');
     }
 }

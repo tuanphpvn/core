@@ -107,12 +107,14 @@ class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
     {
         $identifiers = ['id'];
         list($propertyNameCollectionFactory, $propertyMetadataFactory) = $this->getMetadataProphecies([Dummy::class => $identifiers]);
+
         $queryBuilder = $this->prophesize(QueryBuilder::class)->reveal();
+
         $managerRegistry = $this->getManagerRegistryProphecy($queryBuilder, $identifiers, Dummy::class);
 
-        $dataProvider = new SubresourceDataProvider($managerRegistry, $propertyNameCollectionFactory, $propertyMetadataFactory, []);
+        $dataProvider = new SubresourceDataProvider($managerRegistry, $propertyNameCollectionFactory, $propertyMetadataFactory, /** $collectionExtensions */[]);
 
-        $dataProvider->getSubresource(Dummy::class, ['id' => 1], []);
+        $dataProvider->getSubresource(Dummy::class, /** $identifiers */['id' => 1], /** $context is not have identifiers */[]);
     }
 
     public function testGetSubresource()
@@ -177,24 +179,19 @@ class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
 
         list($propertyNameCollectionFactory, $propertyMetadataFactory) = $this->getMetadataProphecies([Dummy::class => $identifiers]);
 
-        $dataProvider = new SubresourceDataProvider($createManagerRegistry(), $propertyNameCollectionFactory, $propertyMetadataFactory);
+        $subResourceDataProvider = new SubresourceDataProvider($createManagerRegistry(), $propertyNameCollectionFactory, $propertyMetadataFactory);
 
         $context = ['property' => 'relatedDummies', 'identifiers' => [['id', Dummy::class]], 'collection' => true];
 
-        $this->assertEquals([], $dataProvider->getSubresource(RelatedDummy::class, ['id' => 1], $context));
+        $this->assertEquals([], $subResourceDataProvider->getSubresource(RelatedDummy::class, /** $identifiers */['id' => 1], $context));
     }
 
     public function testGetSubSubresourceItem()
     {
-
-
-
         $identifiers = ['id'];
         $result = new \StdClass();
 
         $createManagerRegistry = function() use ($identifiers, $result) {
-
-
             // First manager (Dummy)
             $dummyDQL = 'SELECT relatedDummies_a3 FROM ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy id_a2 INNER JOIN id_a2.relatedDummies relatedDummies_a3 WHERE id_a2.id = :id_p2';
 
@@ -285,10 +282,10 @@ class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
 
         $context = ['property' => 'thirdLevel', 'identifiers' => [['id', Dummy::class], ['relatedDummies', RelatedDummy::class]], 'collection' => false];
 
-        $this->assertEquals($result, $dataProvider->getSubresource(ThirdLevel::class, ['id' => 1, 'relatedDummies' => 1], $context));
+        $this->assertEquals($result, $dataProvider->getSubresource(ThirdLevel::class, /** $identifiers */['id' => 1, 'relatedDummies' => 1], $context));
     }
 
-    public function testQueryResultExtension()
+    public function testWithQueryResultCollectionExtension()
     {
 
         $identifiers = ['id'];
@@ -357,13 +354,11 @@ class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
             return $extensionProphecy->reveal();
         };
 
-
-
         $dataProvider = new SubresourceDataProvider($createRegistryManager(), $propertyNameCollectionFactory, $propertyMetadataFactory, [$createExtension()]);
 
         $context = ['property' => 'relatedDummies', 'identifiers' => [['id', Dummy::class]], 'collection' => true];
 
-        $this->assertEquals([], $dataProvider->getSubresource(RelatedDummy::class, ['id' => 1], $context));
+        $this->assertEquals([], $dataProvider->getSubresource(RelatedDummy::class, /** $identifiers */['id' => 1], $context));
     }
 
     /**
@@ -393,12 +388,17 @@ class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
     public function testThrowResourceClassNotSupportedException()
     {
         $identifiers = ['id'];
-        $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
-        $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn(null)->shouldBeCalled();
+
+        $createManagerRegistry = function() {
+            $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
+            $managerRegistryProphecy->getManagerForClass(Dummy::class)->willReturn(null)->shouldBeCalled();
+
+            return $managerRegistryProphecy->reveal();
+        };
 
         list($propertyNameCollectionFactory, $propertyMetadataFactory) = $this->getMetadataProphecies([Dummy::class => $identifiers]);
 
-        $dataProvider = new SubresourceDataProvider($managerRegistryProphecy->reveal(), $propertyNameCollectionFactory, $propertyMetadataFactory);
+        $dataProvider = new SubresourceDataProvider($createManagerRegistry(), $propertyNameCollectionFactory, $propertyMetadataFactory);
         $dataProvider->getSubresource(Dummy::class, ['id' => 1], []);
     }
 }

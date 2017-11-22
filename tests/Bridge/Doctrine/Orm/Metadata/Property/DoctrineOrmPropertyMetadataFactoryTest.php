@@ -31,14 +31,13 @@ class DoctrineOrmPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
     {
         $propertyMetadata = new PropertyMetadata();
 
-        $createPropertyMetadataFactory = function() use ($propertyMetadata) {
+        $createDecorated = function() use ($propertyMetadata) {
 
             $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
             $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
 
             return $propertyMetadataFactory->reveal();
         };
-
 
         $createManagerRegistry = function() {
             $managerRegistry = $this->prophesize(ManagerRegistry::class);
@@ -47,17 +46,16 @@ class DoctrineOrmPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
             return $managerRegistry->reveal();
         };
 
+        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createManagerRegistry(), $createDecorated());
 
-        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createManagerRegistry(), $createPropertyMetadataFactory());
-
-        $this->assertEquals($doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'id', []), $propertyMetadata);
+        $this->assertEquals($propertyMetadata, $doctrineOrmPropertyMetadataFactory->create(/** $resourceClass */Dummy::class, /** $property */'id', /** $options */[]));
     }
 
     public function testCreateNoClassMetadata()
     {
         $propertyMetadata = new PropertyMetadata();
 
-        $createPropertyMetadataFactory = function() use ($propertyMetadata) {
+        $createDecorated = function() use ($propertyMetadata) {
             $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
             $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
 
@@ -74,9 +72,9 @@ class DoctrineOrmPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
             return $managerRegistry->reveal();
         };
 
-        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createMangerRegistry(), $createPropertyMetadataFactory());
+        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createMangerRegistry(), $createDecorated());
 
-        $this->assertEquals($doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'id', []), $propertyMetadata);
+        $this->assertEquals($propertyMetadata, $doctrineOrmPropertyMetadataFactory->create(/** $resourceClass */Dummy::class, /** $property */'id', /** $options */[]));
     }
 
     public function testCreateIsIdentifier()
@@ -90,7 +88,7 @@ class DoctrineOrmPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
 
         $propertyMetadata = $createPropertyMetadata();
 
-        $createPropertyMetadataFactory = function() use ($propertyMetadata) {
+        $createDecorated = function() use ($propertyMetadata) {
             $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
             $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
 
@@ -109,20 +107,16 @@ class DoctrineOrmPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
             return $managerRegistry->reveal();
         };
 
-        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createManageRegistry(), $createPropertyMetadataFactory());
+        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createManageRegistry(), $createDecorated());
 
-        $this->assertEquals($doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'id', []), $propertyMetadata);
+        $this->assertEquals($propertyMetadata, $doctrineOrmPropertyMetadataFactory->create(/** $resourceClass */Dummy::class, /** $property */'id', /** $options */[]));
     }
 
     public function testCreateIsWritable()
     {
-
-
-        $createPropertyMetadataFactory = function()  {
-
+        $createDecorated = function()  {
             $propertyMetadata = new PropertyMetadata();
             $propertyMetadata = $propertyMetadata->withWritable(false);
-
 
             $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
             $propertyMetadataFactory->create(Dummy::class, 'id', [])->shouldBeCalled()->willReturn($propertyMetadata);
@@ -143,17 +137,17 @@ class DoctrineOrmPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
             return $managerRegistry->reveal();
         };
 
-        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createMangerRegistry(), $createPropertyMetadataFactory());
+        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createMangerRegistry(), $createDecorated());
 
-        $doctrinePropertyMetadata = $doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'id', []);
+        $doctrinePropertyMetadata = $doctrineOrmPropertyMetadataFactory->create(Dummy::class, /** $property */'id', /** $options */[]);
 
-        $this->assertEquals($doctrinePropertyMetadata->isIdentifier(), true);
-        $this->assertEquals($doctrinePropertyMetadata->isWritable(), false);
+        $this->assertEquals(true, $doctrinePropertyMetadata->isIdentifier());
+        $this->assertEquals(false, $doctrinePropertyMetadata->isWritable());
     }
 
     public function testCreateClassMetadataInfo()
     {
-        $createPropertyMetadataFactory = function() {
+        $createDecorated = function() {
             $propertyMetadata = new PropertyMetadata();
 
             $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
@@ -176,12 +170,12 @@ class DoctrineOrmPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
             return $managerRegistry->reveal();
         };
 
-        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createManagerRegistry(), $createPropertyMetadataFactory());
+        $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createManagerRegistry(), $createDecorated());
 
-        $doctrinePropertyMetadata = $doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'id', []);
+        $doctrinePropertyMetadata = $doctrineOrmPropertyMetadataFactory->create(Dummy::class, /** $property */'id', /** $options */[]);
 
-        $this->assertEquals($doctrinePropertyMetadata->isIdentifier(), true);
-        $this->assertEquals($doctrinePropertyMetadata->isWritable(), true);
+        $this->assertEquals(true, $doctrinePropertyMetadata->isIdentifier());
+        $this->assertEquals(true, $doctrinePropertyMetadata->isWritable());
     }
 
     public function testCreateClassMetadata()
@@ -208,12 +202,11 @@ class DoctrineOrmPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
             return $managerRegistry->reveal();
         };
 
-
         $doctrineOrmPropertyMetadataFactory = new DoctrineOrmPropertyMetadataFactory($createMangerRegistry(), $createPropertyMetadataFactory());
 
-        $doctrinePropertyMetadata = $doctrineOrmPropertyMetadataFactory->create(Dummy::class, 'id', []);
+        $doctrinePropertyMetadata = $doctrineOrmPropertyMetadataFactory->create(Dummy::class, /** $property */'id', /** $options */[]);
 
-        $this->assertEquals($doctrinePropertyMetadata->isIdentifier(), true);
-        $this->assertEquals($doctrinePropertyMetadata->isWritable(), false);
+        $this->assertEquals(true, $doctrinePropertyMetadata->isIdentifier());
+        $this->assertEquals(false, $doctrinePropertyMetadata->isWritable());
     }
 }

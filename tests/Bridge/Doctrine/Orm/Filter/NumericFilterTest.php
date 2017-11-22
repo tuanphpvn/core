@@ -60,21 +60,24 @@ class NumericFilterTest extends KernelTestCase
      */
     public function testApply($properties, array $filterParameters, string $expected)
     {
-        $request = Request::create('/api/dummies', 'GET', $filterParameters);
-
-        $requestStack = new RequestStack();
-        $requestStack->push($request);
-
         $queryBuilder = $this->repository->createQueryBuilder('o');
 
-        $filter = new NumericFilter(
-            $this->managerRegistry,
-            $requestStack,
-            null,
-            $properties
-        );
+        $createFilter = function() use ($properties, $filterParameters) {
 
-        $filter->apply($queryBuilder, new QueryNameGenerator(), $this->resourceClass);
+            $request = Request::create('/api/dummies', 'GET', $filterParameters);
+
+            $requestStack = new RequestStack();
+            $requestStack->push($request);
+
+            return new NumericFilter(
+                $this->managerRegistry,
+                $requestStack,
+                null,
+                $properties
+            );
+        };
+
+        $createFilter()->apply($queryBuilder, new QueryNameGenerator(), $this->resourceClass);
         $actual = $queryBuilder->getQuery()->getDQL();
 
         $this->assertEquals($expected, $actual);

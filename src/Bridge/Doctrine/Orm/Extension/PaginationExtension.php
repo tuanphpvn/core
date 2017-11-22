@@ -118,11 +118,11 @@ final class PaginationExtension implements QueryResultCollectionExtensionInterfa
 
     private function isPaginationEnabled(Request $request, ResourceMetadata $resourceMetadata, string $operationName = null): bool
     {
-        $enabled = $resourceMetadata->getCollectionOperationAttribute($operationName, 'pagination_enabled', $this->enabled, true);
-        $clientEnabled = $resourceMetadata->getCollectionOperationAttribute($operationName, 'pagination_client_enabled', $this->clientEnabled, true);
+        $enabled = $resourceMetadata->getCollectionOperationAttribute($operationName, 'pagination_enabled', /** $defaultValue */$this->enabled, /** $resourceFallback */true);
+        $clientEnabled = $resourceMetadata->getCollectionOperationAttribute($operationName, 'pagination_client_enabled', /** $defaultValue */$this->clientEnabled, /** $resourceFallback */true);
 
         if ($clientEnabled) {
-            $enabled = filter_var($request->query->get($this->enabledParameterName, $enabled), FILTER_VALIDATE_BOOLEAN);
+            $enabled = filter_var($request->query->get(/** $key */$this->enabledParameterName, /** $default */$enabled), FILTER_VALIDATE_BOOLEAN);
         }
 
         return $enabled;

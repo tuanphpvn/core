@@ -93,7 +93,6 @@ class QueryCheckerTest extends \PHPUnit_Framework_TestCase
             return $managerRegistry->reveal();
         };
 
-
         $this->assertTrue(QueryChecker::hasRootEntityWithCompositeIdentifier($createQueryBuilder(), $createManagerRegistry()));
     }
 
@@ -206,7 +205,7 @@ class QueryCheckerTest extends \PHPUnit_Framework_TestCase
             return $queryBuilder->reveal();
         };
 
-        $createMangerRegistry = function() {
+        $createManagerRegistry = function() {
             $classMetadata = $this->prophesize(ClassMetadata::class);
             $objectManager = $this->prophesize(ObjectManager::class);
             $objectManager->getClassMetadata('Dummy')->willReturn($classMetadata->reveal());
@@ -216,7 +215,7 @@ class QueryCheckerTest extends \PHPUnit_Framework_TestCase
             return $managerRegistry->reveal();
         };
 
-        $this->assertFalse(QueryChecker::hasOrderByOnToManyJoin($createQueryBuilder(), $createMangerRegistry()));
+        $this->assertFalse(QueryChecker::hasOrderByOnToManyJoin($createQueryBuilder(), $createManagerRegistry()));
     }
 
     public function testHasOrderByOnToManyJoinWithoutJoinAndWithoutOrderBy()
