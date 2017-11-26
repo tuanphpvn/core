@@ -43,8 +43,13 @@ final class ValidationExceptionListener
     public function onKernelException(GetResponseForExceptionEvent $event)
     {
         $exception = $event->getException();
-        if (!$exception instanceof ValidationException) {
-            return;
+
+        $isNotHandle = function() use ($exception) {
+            return !$exception instanceof ValidationException;
+        };
+
+        if($isNotHandle()) {
+            return true;
         }
 
         $format = ErrorFormatGuesser::guessErrorFormat($event->getRequest(), $this->errorFormats);

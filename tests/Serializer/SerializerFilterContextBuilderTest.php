@@ -30,13 +30,6 @@ class SerializerFilterContextBuilderTest extends \PHPUnit_Framework_TestCase
 {
     public function testCreateFromRequestWithCollectionOperation()
     {
-        $request = new Request();
-
-        $attributes = [
-            'resource_class' => DummyGroup::class,
-            'collection_operation_name' => 'get',
-        ];
-
         $resourceMetadata = new ResourceMetadata(
             null,
             null,
@@ -44,9 +37,20 @@ class SerializerFilterContextBuilderTest extends \PHPUnit_Framework_TestCase
             null,
             ['get' => ['filters' => ['dummy_group.group', 'dummy_group.search', 'dummy_group.nonexistent']]]
         );
+        $request = new Request();
 
-        $decoratedProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $decoratedProphecy->createFromRequest($request, true, $attributes)->willReturn([])->shouldBeCalled();
+        $attributes = [
+            'resource_class' => DummyGroup::class,
+            'collection_operation_name' => 'get',
+        ];
+
+        $createDecorated = function() use ($request, $attributes) {
+
+            $decoratedProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+            $decoratedProphecy->createFromRequest($request, true, $attributes)->willReturn([])->shouldBeCalled();
+
+            return $decoratedProphecy->reveal();
+        };
 
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $resourceMetadataFactoryProphecy->create(DummyGroup::class)->willReturn($resourceMetadata)->shouldBeCalled();
@@ -56,14 +60,18 @@ class SerializerFilterContextBuilderTest extends \PHPUnit_Framework_TestCase
 
         $dummyGroupSearchFilterProphecy = $this->prophesize(FilterInterface::class);
 
-        $filterLocatorProphecy = $this->prophesize(ContainerInterface::class);
-        $filterLocatorProphecy->has('dummy_group.group')->willReturn(true)->shouldBeCalled();
-        $filterLocatorProphecy->get('dummy_group.group')->willReturn($dummyGroupGroupFilterProphecy->reveal())->shouldBeCalled();
-        $filterLocatorProphecy->has('dummy_group.search')->willReturn(true)->shouldBeCalled();
-        $filterLocatorProphecy->get('dummy_group.search')->willReturn($dummyGroupSearchFilterProphecy->reveal())->shouldBeCalled();
-        $filterLocatorProphecy->has('dummy_group.nonexistent')->willReturn(false)->shouldBeCalled();
+        $createFilterLocator = function() use ($dummyGroupGroupFilterProphecy, $dummyGroupSearchFilterProphecy) {
+            $filterLocatorProphecy = $this->prophesize(ContainerInterface::class);
+            $filterLocatorProphecy->has('dummy_group.group')->willReturn(true)->shouldBeCalled();
+            $filterLocatorProphecy->get('dummy_group.group')->willReturn($dummyGroupGroupFilterProphecy->reveal())->shouldBeCalled();
+            $filterLocatorProphecy->has('dummy_group.search')->willReturn(true)->shouldBeCalled();
+            $filterLocatorProphecy->get('dummy_group.search')->willReturn($dummyGroupSearchFilterProphecy->reveal())->shouldBeCalled();
+            $filterLocatorProphecy->has('dummy_group.nonexistent')->willReturn(false)->shouldBeCalled();
 
-        $serializerContextBuilderFilter = new SerializerFilterContextBuilder($resourceMetadataFactoryProphecy->reveal(), $filterLocatorProphecy->reveal(), $decoratedProphecy->reveal());
+            return $filterLocatorProphecy->reveal();
+        };
+
+        $serializerContextBuilderFilter = new SerializerFilterContextBuilder($resourceMetadataFactoryProphecy->reveal(), $createFilterLocator(), $createDecorated());
         $context = $serializerContextBuilderFilter->createFromRequest($request, true, $attributes);
 
         $this->assertInternalType('array', $context);
@@ -97,14 +105,18 @@ class SerializerFilterContextBuilderTest extends \PHPUnit_Framework_TestCase
 
         $dummyGroupSearchFilterProphecy = $this->prophesize(FilterInterface::class);
 
-        $filterLocatorProphecy = $this->prophesize(ContainerInterface::class);
-        $filterLocatorProphecy->has('dummy_group.group')->willReturn(true)->shouldBeCalled();
-        $filterLocatorProphecy->get('dummy_group.group')->willReturn($dummyGroupGroupFilterProphecy->reveal())->shouldBeCalled();
-        $filterLocatorProphecy->has('dummy_group.search')->willReturn(true)->shouldBeCalled();
-        $filterLocatorProphecy->get('dummy_group.search')->willReturn($dummyGroupSearchFilterProphecy->reveal())->shouldBeCalled();
-        $filterLocatorProphecy->has('dummy_group.nonexistent')->willReturn(false)->shouldBeCalled();
+        $createFilterLocator = function() use ($dummyGroupSearchFilterProphecy, $dummyGroupGroupFilterProphecy) {
+            $filterLocatorProphecy = $this->prophesize(ContainerInterface::class);
+            $filterLocatorProphecy->has('dummy_group.group')->willReturn(true)->shouldBeCalled();
+            $filterLocatorProphecy->get('dummy_group.group')->willReturn($dummyGroupGroupFilterProphecy->reveal())->shouldBeCalled();
+            $filterLocatorProphecy->has('dummy_group.search')->willReturn(true)->shouldBeCalled();
+            $filterLocatorProphecy->get('dummy_group.search')->willReturn($dummyGroupSearchFilterProphecy->reveal())->shouldBeCalled();
+            $filterLocatorProphecy->has('dummy_group.nonexistent')->willReturn(false)->shouldBeCalled();
 
-        $serializerContextBuilderFilter = new SerializerFilterContextBuilder($resourceMetadataFactoryProphecy->reveal(), $filterLocatorProphecy->reveal(), $decoratedProphecy->reveal());
+            return $filterLocatorProphecy->reveal();
+        };
+
+        $serializerContextBuilderFilter = new SerializerFilterContextBuilder($resourceMetadataFactoryProphecy->reveal(), $createFilterLocator(), $decoratedProphecy->reveal());
         $context = $serializerContextBuilderFilter->createFromRequest($request, true, $attributes);
 
         $this->assertInternalType('array', $context);

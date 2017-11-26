@@ -28,7 +28,7 @@ class GroupFilterTest extends \PHPUnit_Framework_TestCase
         $context = ['groups' => ['foo', 'qux']];
 
         $groupFilter = new GroupFilter();
-        $groupFilter->apply($request, true, [], $context);
+        $groupFilter->apply($request, /** $normalization */true, /** $attributes */[], $context);
 
         $this->assertEquals(['groups' => ['foo', 'qux', 'foo', 'bar', 'baz']], $context);
     }

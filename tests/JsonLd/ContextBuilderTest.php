@@ -49,11 +49,14 @@ class ContextBuilderTest extends \PHPUnit_Framework_TestCase
 
     public function testResourceContext()
     {
-        $this->resourceMetadataFactoryProphecy->create($this->entityClass)->willReturn(new ResourceMetadata('DummyEntity'));
-        $this->propertyNameCollectionFactoryProphecy->create($this->entityClass)->willReturn(new PropertyNameCollection(['dummyPropertyA']));
-        $this->propertyMetadataFactoryProphecy->create($this->entityClass, 'dummyPropertyA')->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'Dummy property A', true, true, true, true, false, false, null, null, []));
+        $createContextBuilder = function() {
+            $this->resourceMetadataFactoryProphecy->create($this->entityClass)->willReturn(new ResourceMetadata('DummyEntity'));
+            $this->propertyNameCollectionFactoryProphecy->create($this->entityClass)->willReturn(new PropertyNameCollection(['dummyPropertyA']));
+            $this->propertyMetadataFactoryProphecy->create($this->entityClass, 'dummyPropertyA')->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'Dummy property A', true, true, true, true, false, false, null, null, []));
 
-        $contextBuilder = new ContextBuilder($this->resourceNameCollectionFactoryProphecy->reveal(), $this->resourceMetadataFactoryProphecy->reveal(), $this->propertyNameCollectionFactoryProphecy->reveal(), $this->propertyMetadataFactoryProphecy->reveal(), $this->urlGeneratorProphecy->reveal());
+            return new ContextBuilder($this->resourceNameCollectionFactoryProphecy->reveal(), $this->resourceMetadataFactoryProphecy->reveal(), $this->propertyNameCollectionFactoryProphecy->reveal(), $this->propertyMetadataFactoryProphecy->reveal(), $this->urlGeneratorProphecy->reveal());
+        };
+        $contextBuilder = $createContextBuilder();
 
         $expected = [
             '@vocab' => '#',

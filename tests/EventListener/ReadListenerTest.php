@@ -27,20 +27,35 @@ class ReadListenerTest extends \PHPUnit_Framework_TestCase
 {
     public function testNotAnApiPlatformRequest()
     {
-        $collectionDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
-        $collectionDataProvider->getCollection()->shouldNotBeCalled();
+        $createCollectionDataProvider = function() {
+            $collectionDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
+            $collectionDataProvider->getCollection()->shouldNotBeCalled();
 
-        $itemDataProvider = $this->prophesize(ItemDataProviderInterface::class);
-        $itemDataProvider->getItem()->shouldNotBeCalled();
+            return $collectionDataProvider->reveal();
+        };
 
-        $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
-        $subresourceDataProvider->getSubresource()->shouldNotBeCalled();
+        $createItemDataProvider = function() {
+            $itemDataProvider = $this->prophesize(ItemDataProviderInterface::class);
+            $itemDataProvider->getItem()->shouldNotBeCalled();
 
-        $event = $this->prophesize(GetResponseEvent::class);
-        $event->getRequest()->willReturn(new Request())->shouldBeCalled();
+            return $itemDataProvider->reveal();
+        };
 
-        $listener = new ReadListener($collectionDataProvider->reveal(), $itemDataProvider->reveal(), $subresourceDataProvider->reveal());
-        $listener->onKernelRequest($event->reveal());
+        $createSubresourceDataProvider = function() {
+            $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
+            $subresourceDataProvider->getSubresource()->shouldNotBeCalled();
+            return $subresourceDataProvider->reveal();
+        };
+
+        $createEvent = function() {
+            $event = $this->prophesize(GetResponseEvent::class);
+            $event->getRequest()->willReturn(new Request())->shouldBeCalled();
+
+            return $event->reveal();
+        };
+
+        $listener = new ReadListener($createCollectionDataProvider(), $createItemDataProvider(), $createSubresourceDataProvider());
+        $listener->onKernelRequest($createEvent());
     }
 
     public function testDoNotCallWhenReceiveFlagIsFalse()

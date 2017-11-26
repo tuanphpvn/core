@@ -30,17 +30,25 @@ class ExceptionListenerTest extends \PHPUnit_Framework_TestCase
      */
     public function testOnKernelException(Request $request)
     {
-        $kernel = $this->prophesize(HttpKernelInterface::class);
-        $kernel->handle(Argument::type(Request::class), HttpKernelInterface::SUB_REQUEST, false)->willReturn(new Response())->shouldBeCalled();
+        $createKernel = function() {
+            $kernel = $this->prophesize(HttpKernelInterface::class);
+            $kernel->handle(Argument::type(Request::class), HttpKernelInterface::SUB_REQUEST, false)->willReturn(new Response())->shouldBeCalled();
+            return $kernel->reveal();
+        };
+        $kernel = $createKernel();
 
-        $eventProphecy = $this->prophesize(GetResponseForExceptionEvent::class);
-        $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
-        $eventProphecy->getException()->willReturn(new \Exception())->shouldBeCalled();
-        $eventProphecy->getKernel()->willReturn($kernel)->shouldBeCalled();
-        $eventProphecy->setResponse(Argument::type(Response::class))->shouldBeCalled();
+        $createEvent = function() use ($request, $kernel) {
+            $eventProphecy = $this->prophesize(GetResponseForExceptionEvent::class);
+            $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
+            $eventProphecy->getException()->willReturn(new \Exception())->shouldBeCalled();
+            $eventProphecy->getKernel()->willReturn($kernel)->shouldBeCalled();
+            $eventProphecy->setResponse(Argument::type(Response::class))->shouldBeCalled();
+
+            return $eventProphecy->reveal();
+        };
 
         $listener = new ExceptionListener($_controller = 'foo:bar');
-        $listener->onKernelException($eventProphecy->reveal());
+        $listener->onKernelException($createEvent());
     }
 
     public function getRequest()

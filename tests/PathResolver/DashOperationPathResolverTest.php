@@ -30,7 +30,7 @@ class DashOperationPathResolverTest extends \PHPUnit_Framework_TestCase
     {
         $dashOperationPathResolver = new DashOperationPathResolver();
 
-        $this->assertSame('/short-names.{_format}', $dashOperationPathResolver->resolveOperationPath('ShortName', [], OperationType::COLLECTION, 'get'));
+        $this->assertSame('/short-names.{_format}', $dashOperationPathResolver->resolveOperationPath(/** $resourceShortName */'ShortName', /** $operation */[], OperationType::COLLECTION, 'get'));
     }
 
     /**

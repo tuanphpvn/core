@@ -23,7 +23,7 @@ class RequestParserTest extends \PHPUnit_Framework_TestCase
 {
     public function testParseAndDupplicateRequest()
     {
-        $request = new Request(['toto=tata'], [], [], [], [], [], '{"gerard":"toto"}');
+        $request = new Request(/** $query */['toto=tata'], /** $request */[], /** $attributes */[], /** $cookies */[], /** $files */[], /** $server */[], '{"gerard":"toto"}');
         $value = RequestParser::parseAndDuplicateRequest($request);
         $this->assertNotNull($value);
     }

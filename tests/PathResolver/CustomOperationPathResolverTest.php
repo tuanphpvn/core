@@ -26,7 +26,7 @@ class CustomOperationPathResolverTest extends \PHPUnit_Framework_TestCase
     {
         $operationPathResolver = new CustomOperationPathResolver($this->prophesize(OperationPathResolverInterface::class)->reveal());
 
-        $this->assertEquals('/foos.{_format}', $operationPathResolver->resolveOperationPath('Foo', ['path' => '/foos.{_format}'], OperationType::COLLECTION, 'get'));
+        $this->assertEquals('/foos.{_format}', $operationPathResolver->resolveOperationPath('Foo', /** $operation */['path' => '/foos.{_format}'], OperationType::COLLECTION, 'get'));
     }
 
     public function testResolveOperationPathWithDeferred()

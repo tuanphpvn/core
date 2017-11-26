@@ -32,41 +32,60 @@ class ValidateListenerTest extends \PHPUnit_Framework_TestCase
 {
     public function testNotAnApiPlatformRequest()
     {
-        $validatorProphecy = $this->prophesize(ValidatorInterface::class);
-        $validatorProphecy->validate()->shouldNotBeCalled();
-        $validator = $validatorProphecy->reveal();
+        $createValidator = function() {
+            $validatorProphecy = $this->prophesize(ValidatorInterface::class);
+            $validatorProphecy->validate()->shouldNotBeCalled();
+            return $validatorProphecy->reveal();
+        };
 
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create()->shouldNotBeCalled();
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+        $createResourceMetadata = function() {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create()->shouldNotBeCalled();
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $request = new Request();
-        $request->setMethod('POST');
+        $createPostRequest = function() {
+            $request = new Request();
+            $request->setMethod('POST');
 
-        $event = $this->prophesize(GetResponseForControllerResultEvent::class);
-        $event->getRequest()->willReturn($request)->shouldBeCalled();
+            return $request;
+        };
+        $postRequest = $createPostRequest();
 
-        $listener = new ValidateListener($validator, $resourceMetadataFactory);
-        $listener->onKernelView($event->reveal());
+        $createEvent = function() use ($postRequest) {
+            $event = $this->prophesize(GetResponseForControllerResultEvent::class);
+            $event->getRequest()->willReturn($postRequest)->shouldBeCalled();
+
+            return $event->reveal();
+        };
+
+        $listener = new ValidateListener($createValidator(), $createResourceMetadata());
+        $listener->onKernelView($createEvent());
     }
 
     public function testValidatorIsCalled()
     {
-        $data = new DummyEntity();
         $expectedValidationGroups = ['a', 'b', 'c'];
+        $data = new DummyEntity();
 
-        $validatorProphecy = $this->prophesize(ValidatorInterface::class);
-        $constraintViolationList = $this->prophesize(ConstraintViolationListInterface::class);
-        $validatorProphecy->validate($data, null, $expectedValidationGroups)->willReturn($constraintViolationList)->shouldBeCalled();
-        $validator = $validatorProphecy->reveal();
+        $createValidator = function() use ($expectedValidationGroups, $data) {
+            $validatorProphecy = $this->prophesize(ValidatorInterface::class);
+            $constraintViolationList = $this->prophesize(ConstraintViolationListInterface::class);
+            $validatorProphecy->validate($data, null, $expectedValidationGroups)->willReturn($constraintViolationList)->shouldBeCalled();
+            return $validatorProphecy->reveal();
+        };
 
-        $containerProphecy = $this->prophesize(ContainerInterface::class);
-        $containerProphecy->has(Argument::any())->shouldNotBeCalled();
+        $createContainer = function() {
+            $containerProphecy = $this->prophesize(ContainerInterface::class);
+            $containerProphecy->has(Argument::any())->shouldNotBeCalled();
 
-        list($resourceMetadataFactory, $event) = $this->createEventObject($expectedValidationGroups, $data);
+            return $containerProphecy->reveal();
+        };
 
-        $validationViewListener = new ValidateListener($validator, $resourceMetadataFactory, $containerProphecy->reveal());
-        $validationViewListener->onKernelView($event);
+        list($resourceMetadataFactory, $getResponseForControllerEvent) = $this->createEventObject($expectedValidationGroups, $data);
+
+        $validationViewListener = new ValidateListener($createValidator(), $resourceMetadataFactory, $createContainer());
+        $validationViewListener->onKernelView($getResponseForControllerEvent);
     }
 
     public function testGetGroupsFromCallable()
@@ -171,28 +190,35 @@ class ValidateListenerTest extends \PHPUnit_Framework_TestCase
 
     private function createEventObject($expectedValidationGroups, $data, bool $receive = true): array
     {
-        $resourceMetadata = new ResourceMetadata(null, null, null, [
-            'create' => ['validation_groups' => $expectedValidationGroups],
-        ]);
+        $createResourceMetadataFactory = function() use ($expectedValidationGroups, $receive) {
+            $resourceMetadata = new ResourceMetadata(null, null, null, [
+                'create' => ['validation_groups' => $expectedValidationGroups],
+            ]);
 
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        if ($receive) {
-            $resourceMetadataFactoryProphecy->create(DummyEntity::class)->willReturn($resourceMetadata)->shouldBeCalled();
-        }
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            if ($receive) {
+                $resourceMetadataFactoryProphecy->create(DummyEntity::class)->willReturn($resourceMetadata)->shouldBeCalled();
+            }
 
-        $kernel = $this->prophesize(HttpKernelInterface::class)->reveal();
-        $request = new Request([], [], [
-            '_api_resource_class' => DummyEntity::class,
-            '_api_item_operation_name' => 'create',
-            '_api_format' => 'json',
-            '_api_mime_type' => 'application/json',
-            '_api_receive' => $receive,
-        ]);
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $request->setMethod(Request::METHOD_POST);
-        $event = new GetResponseForControllerResultEvent($kernel, $request, HttpKernelInterface::MASTER_REQUEST, $data);
+        $createEvent = function() use ($receive, $data) {
+            $kernel = $this->prophesize(HttpKernelInterface::class)->reveal();
+            $request = new Request(/** $query */[], /** $request */[], /** $attributes */[
+                '_api_resource_class' => DummyEntity::class,
+                '_api_item_operation_name' => 'create',
+                '_api_format' => 'json',
+                '_api_mime_type' => 'application/json',
+                '_api_receive' => $receive,
+            ]);
 
-        return [$resourceMetadataFactory, $event];
+            $request->setMethod(Request::METHOD_POST);
+            $event = new GetResponseForControllerResultEvent($kernel, $request, HttpKernelInterface::MASTER_REQUEST, $data);
+
+            return $event;
+        };
+
+        return [$createResourceMetadataFactory(), $createEvent()];
     }
 }

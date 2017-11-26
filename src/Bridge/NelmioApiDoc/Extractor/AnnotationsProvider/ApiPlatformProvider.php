@@ -79,7 +79,7 @@ final class ApiPlatformProvider implements AnnotationsProviderInterface
 
             if (null !== $collectionOperations = $resourceMetadata->getCollectionOperations()) {
                 foreach ($collectionOperations as $operationName => $operation) {
-                    $annotations[] = $this->getApiDoc(true, $resourceClass, $resourceMetadata, $operationName, $resourceHydraDoc, $entrypointHydraDoc);
+                    $annotations[] = $this->getApiDoc(/** $isCollection */true, $resourceClass, $resourceMetadata, $operationName, $resourceHydraDoc, $entrypointHydraDoc);
                 }
             }
 
@@ -133,7 +133,7 @@ final class ApiPlatformProvider implements AnnotationsProviderInterface
         }
 
         if ($collection && Request::METHOD_GET === $method) {
-            $resourceFilters = $resourceMetadata->getCollectionOperationAttribute($operationName, 'filters', [], true);
+            $resourceFilters = $resourceMetadata->getCollectionOperationAttribute($operationName, /** $keys */'filters', /** $defaultValue */[], /** $resourceFallback */true);
 
             $data['filters'] = [];
             foreach ($resourceFilters as $filterId) {

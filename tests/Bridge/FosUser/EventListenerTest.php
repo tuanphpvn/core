@@ -29,13 +29,17 @@ class EventListenerTest extends \PHPUnit_Framework_TestCase
     {
         $user = $this->prophesize(UserInterface::class);
 
-        $request = new Request([], [], ['_api_resource_class' => User::class, '_api_item_operation_name' => 'delete']);
-        $request->setMethod(Request::METHOD_DELETE);
+        $createUserManager = function() use ($user) {
 
-        $manager = $this->prophesize(UserManagerInterface::class);
-        $manager->deleteUser($user)->shouldBeCalled();
+            $manager = $this->prophesize(UserManagerInterface::class);
+            $manager->deleteUser($user)->shouldBeCalled();
+            return $manager->reveal();
+        };
 
-        $createEvent = function() use ($request, $user) {
+        $createGetResponseForControllerResultEvent = function() use ($user) {
+
+            $request = new Request(/** $query */[], /** $request */[], /** $attributes */['_api_resource_class' => User::class, '_api_item_operation_name' => 'delete']);
+            $request->setMethod(Request::METHOD_DELETE);
             $event = $this->prophesize(GetResponseForControllerResultEvent::class);
             $event->getControllerResult()->willReturn($user)->shouldBeCalled();
             $event->getRequest()->willReturn($request)->shouldBeCalled();
@@ -44,22 +48,26 @@ class EventListenerTest extends \PHPUnit_Framework_TestCase
             return $event->reveal();
         };
 
-
-        $listener = new EventListener($manager->reveal());
-        $listener->onKernelView($createEvent());
+        $listener = new EventListener($createUserManager());
+        $listener->onKernelView($createGetResponseForControllerResultEvent());
     }
 
     public function testUpdate()
     {
         $user = $this->prophesize(UserInterface::class);
 
-        $request = new Request([], [], ['_api_resource_class' => User::class, '_api_item_operation_name' => 'put']);
-        $request->setMethod(Request::METHOD_PUT);
+        $createUserManager = function() use ($user) {
+            $manager = $this->prophesize(UserManagerInterface::class);
+            $manager->updateUser($user)->shouldBeCalled();
 
-        $manager = $this->prophesize(UserManagerInterface::class);
-        $manager->updateUser($user)->shouldBeCalled();
+            return $manager->reveal();
+        };
 
-        $createEvent = function() use ($user, $request) {
+        $createResponseForControllerResultEvent = function() use ($user) {
+
+            $request = new Request(/** $query */[], /** $request */[], /** $attributes */['_api_resource_class' => User::class, '_api_item_operation_name' => 'put']);
+            $request->setMethod(Request::METHOD_PUT);
+
             $event = $this->prophesize(GetResponseForControllerResultEvent::class);
             $event->getControllerResult()->willReturn($user)->shouldBeCalled();
             $event->getRequest()->willReturn($request)->shouldBeCalled();
@@ -68,56 +76,77 @@ class EventListenerTest extends \PHPUnit_Framework_TestCase
             return $event->reveal();
         };
 
-
-        $listener = new EventListener($manager->reveal());
-        $listener->onKernelView($createEvent());
+        $listener = new EventListener($createUserManager());
+        $listener->onKernelView($createResponseForControllerResultEvent());
     }
 
     public function testNotApiRequest()
     {
-        $request = new Request();
+        $createUserManager = function() {
+            $manager = $this->prophesize(UserManagerInterface::class);
+            $manager->deleteUser()->shouldNotBeCalled();
+            $manager->updateUser()->shouldNotBeCalled();
 
-        $manager = $this->prophesize(UserManagerInterface::class);
-        $manager->deleteUser()->shouldNotBeCalled();
-        $manager->updateUser()->shouldNotBeCalled();
+            return $manager->reveal();
+        };
 
-        $event = $this->prophesize(GetResponseForControllerResultEvent::class);
-        $event->getRequest()->willReturn($request)->shouldBeCalled();
+        $createGetResponseForControllerResultEvent = function() {
+            $request = new Request();
+            $event = $this->prophesize(GetResponseForControllerResultEvent::class);
+            $event->getRequest()->willReturn($request)->shouldBeCalled();
 
-        $listener = new EventListener($manager->reveal());
-        $listener->onKernelView($event->reveal());
+            return $event->reveal();
+        };
+
+        $listener = new EventListener($createUserManager());
+        $listener->onKernelView($createGetResponseForControllerResultEvent());
     }
 
     public function testNotUser()
     {
-        $request = new Request([], [], ['_api_resource_class' => User::class, '_api_item_operation_name' => 'put']);
-        $request->setMethod(Request::METHOD_PUT);
+        $createUserManager = function() {
+            $manager = $this->prophesize(UserManagerInterface::class);
+            $manager->deleteUser()->shouldNotBeCalled();
+            $manager->updateUser()->shouldNotBeCalled();
 
-        $manager = $this->prophesize(UserManagerInterface::class);
-        $manager->deleteUser()->shouldNotBeCalled();
-        $manager->updateUser()->shouldNotBeCalled();
+            return $manager->reveal();
+        };
 
-        $event = $this->prophesize(GetResponseForControllerResultEvent::class);
-        $event->getRequest()->willReturn($request)->shouldBeCalled();
-        $event->getControllerResult()->willReturn(new \stdClass());
+        $createGetResponseForControllerResultEvent = function() {
+            $request = new Request(/** $query */[], /** $request */[], /** $attributes */['_api_resource_class' => User::class, '_api_item_operation_name' => 'put']);
+            $request->setMethod(Request::METHOD_PUT);
 
-        $listener = new EventListener($manager->reveal());
-        $listener->onKernelView($event->reveal());
+            $event = $this->prophesize(GetResponseForControllerResultEvent::class);
+            $event->getRequest()->willReturn($request)->shouldBeCalled();
+            $event->getControllerResult()->willReturn(new \stdClass());
+
+            return $event->reveal();
+        };
+
+        $listener = new EventListener($createUserManager());
+        $listener->onKernelView($createGetResponseForControllerResultEvent());
     }
 
     public function testSafeMethod()
     {
-        $request = new Request([], [], ['_api_resource_class' => User::class, '_api_item_operation_name' => 'put']);
+        $createUserManager = function() {
+            $manager = $this->prophesize(UserManagerInterface::class);
+            $manager->deleteUser()->shouldNotBeCalled();
+            $manager->updateUser()->shouldNotBeCalled();
 
-        $manager = $this->prophesize(UserManagerInterface::class);
-        $manager->deleteUser()->shouldNotBeCalled();
-        $manager->updateUser()->shouldNotBeCalled();
+            return $manager->reveal();
+        };
 
-        $event = $this->prophesize(GetResponseForControllerResultEvent::class);
-        $event->getRequest()->willReturn($request)->shouldBeCalled();
-        $event->getControllerResult()->willReturn(new User());
+        $createGetResponseForControllerEvent = function() {
+            $request = new Request(/** $query */[], /** $request */[], /** $attributes */['_api_resource_class' => User::class, '_api_item_operation_name' => 'put']);
+            $event = $this->prophesize(GetResponseForControllerResultEvent::class);
+            $event->getRequest()->willReturn($request)->shouldBeCalled();
+            $event->getControllerResult()->willReturn(new User());
 
-        $listener = new EventListener($manager->reveal());
-        $listener->onKernelView($event->reveal());
+            return $event->reveal();
+        };
+
+        $listener = new EventListener($createUserManager());
+        $listener->onKernelView($createGetResponseForControllerEvent());
     }
 }

@@ -32,16 +32,28 @@ class ChainCollectionDataProviderTest extends \PHPUnit_Framework_TestCase
         $dummy2 = new Dummy();
         $dummy2->setName('Parks');
 
-        $firstDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
-        $firstDataProvider->getCollection(Dummy::class, null)->willReturn([$dummy, $dummy2])->willThrow(ResourceClassNotSupportedException::class);
+        $createFirstDataProvider = function() use ($dummy, $dummy2) {
+            $firstDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
+            $firstDataProvider->getCollection(Dummy::class, null)->willReturn([$dummy, $dummy2])->willThrow(ResourceClassNotSupportedException::class);
 
-        $secondDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
-        $secondDataProvider->getCollection(Dummy::class, null)->willReturn([$dummy, $dummy2]);
+            return $firstDataProvider->reveal();
+        };
 
-        $thirdDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
-        $thirdDataProvider->getCollection(Dummy::class, null)->willReturn([$dummy]);
+        $createSecondDataProvider = function() use ($dummy, $dummy2) {
+            $secondDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
+            $secondDataProvider->getCollection(Dummy::class, null)->willReturn([$dummy, $dummy2]);
 
-        $chainItemDataProvider = new ChainCollectionDataProvider([$firstDataProvider->reveal(), $secondDataProvider->reveal(), $thirdDataProvider->reveal()]);
+            return $secondDataProvider->reveal();
+        };
+
+        $createThirdDataProvider = function() use ($dummy) {
+            $thirdDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
+            $thirdDataProvider->getCollection(Dummy::class, null)->willReturn([$dummy]);
+
+            return $thirdDataProvider->reveal();
+        };
+
+        $chainItemDataProvider = new ChainCollectionDataProvider([$createFirstDataProvider(), $createSecondDataProvider(), $createThirdDataProvider()]);
 
         $this->assertEquals([$dummy, $dummy2], $chainItemDataProvider->getCollection(Dummy::class));
     }

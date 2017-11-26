@@ -34,15 +34,19 @@ class AnnotationPropertyNameCollectionFactoryTest extends \PHPUnit_Framework_Tes
      */
     public function testCreate(PropertyNameCollectionFactoryInterface $decorated = null, array $results)
     {
-        $reader = $this->prophesize(Reader::class);
-        $reader->getPropertyAnnotation(new \ReflectionProperty(Dummy::class, 'name'), ApiProperty::class)->willReturn(new ApiProperty())->shouldBeCalled();
-        $reader->getPropertyAnnotation(Argument::type(\ReflectionProperty::class), ApiProperty::class)->willReturn(null)->shouldBeCalled();
-        $reader->getMethodAnnotation(new \ReflectionMethod(Dummy::class, 'getName'), ApiProperty::class)->willReturn(new ApiProperty())->shouldBeCalled();
-        $reader->getMethodAnnotation(new \ReflectionMethod(Dummy::class, 'getAlias'), ApiProperty::class)->willReturn(new ApiProperty())->shouldBeCalled();
-        $reader->getMethodAnnotation(new \ReflectionMethod(Dummy::class, 'staticMethod'), ApiProperty::class)->shouldNotBeCalled();
-        $reader->getMethodAnnotation(Argument::type(\ReflectionMethod::class), ApiProperty::class)->willReturn(null)->shouldBeCalled();
+        $createReader = function() {
+            $reader = $this->prophesize(Reader::class);
+            $reader->getPropertyAnnotation(new \ReflectionProperty(Dummy::class, 'name'), ApiProperty::class)->willReturn(new ApiProperty())->shouldBeCalled();
+            $reader->getPropertyAnnotation(Argument::type(\ReflectionProperty::class), ApiProperty::class)->willReturn(null)->shouldBeCalled();
+            $reader->getMethodAnnotation(new \ReflectionMethod(Dummy::class, 'getName'), ApiProperty::class)->willReturn(new ApiProperty())->shouldBeCalled();
+            $reader->getMethodAnnotation(new \ReflectionMethod(Dummy::class, 'getAlias'), ApiProperty::class)->willReturn(new ApiProperty())->shouldBeCalled();
+            $reader->getMethodAnnotation(new \ReflectionMethod(Dummy::class, 'staticMethod'), ApiProperty::class)->shouldNotBeCalled();
+            $reader->getMethodAnnotation(Argument::type(\ReflectionMethod::class), ApiProperty::class)->willReturn(null)->shouldBeCalled();
 
-        $factory = new AnnotationPropertyNameCollectionFactory($reader->reveal(), $decorated);
+            return $reader->reveal();
+        };
+
+        $factory = new AnnotationPropertyNameCollectionFactory($createReader(), $decorated);
         $metadata = $factory->create(Dummy::class, []);
 
         $this->assertEquals($results, iterator_to_array($metadata));

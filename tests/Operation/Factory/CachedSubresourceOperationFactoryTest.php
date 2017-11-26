@@ -27,17 +27,21 @@ class CachedSubresourceOperationFactoryTest extends \PHPUnit_Framework_TestCase
 {
     public function testCreateWithItemHit()
     {
-        $cacheItem = $this->prophesize(CacheItemInterface::class);
-        $cacheItem->isHit()->willReturn(true)->shouldBeCalled();
-        $cacheItem->get()->willReturn(['foo' => 'bar'])->shouldBeCalled();
+        $createCacheItemPool = function() {
+            $cacheItem = $this->prophesize(CacheItemInterface::class);
+            $cacheItem->isHit()->willReturn(true)->shouldBeCalled();
+            $cacheItem->get()->willReturn(['foo' => 'bar'])->shouldBeCalled();
 
-        $cacheItemPool = $this->prophesize(CacheItemPoolInterface::class);
-        $cacheItemPool->getItem($this->generateCacheKey())->willReturn($cacheItem->reveal())->shouldBeCalled();
+            $cacheItemPool = $this->prophesize(CacheItemPoolInterface::class);
+            $cacheItemPool->getItem($this->generateCacheKey())->willReturn($cacheItem->reveal())->shouldBeCalled();
+
+            return $cacheItemPool->reveal();
+        };
 
         $decoratedSubresourceOperationFactory = $this->prophesize(SubresourceOperationFactoryInterface::class);
         $decoratedSubresourceOperationFactory->create()->shouldNotBeCalled();
 
-        $cachedSubresourceOperationFactory = new CachedSubresourceOperationFactory($cacheItemPool->reveal(), $decoratedSubresourceOperationFactory->reveal());
+        $cachedSubresourceOperationFactory = new CachedSubresourceOperationFactory($createCacheItemPool(), $decoratedSubresourceOperationFactory->reveal());
         $resultedSubresourceOperation = $cachedSubresourceOperationFactory->create(Dummy::class);
 
         $this->assertEquals(['foo' => 'bar'], $resultedSubresourceOperation);

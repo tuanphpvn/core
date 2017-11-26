@@ -23,6 +23,8 @@ use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 class SwaggerUiListenerTest extends \PHPUnit_Framework_TestCase
 {
     /**
+     * Kernel will add information to request
+     *
      * @dataProvider getParameters
      */
     public function testOnKernelRequest(Request $request, string $controller = null)
@@ -48,7 +50,7 @@ class SwaggerUiListenerTest extends \PHPUnit_Framework_TestCase
         $jsonRequest->setRequestFormat('json');
 
         return [
-            [$respondRequest, 'api_platform.swagger.action.ui'],
+            [/** $request */$respondRequest, /** $controller */'api_platform.swagger.action.ui'],
             [$resourceClassRequest, 'api_platform.swagger.action.ui'],
             [new Request(), null],
             [$jsonRequest, null],

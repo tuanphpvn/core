@@ -28,16 +28,20 @@ class CachedResourceMetadataFactoryTest extends \PHPUnit_Framework_TestCase
 {
     public function testCreateWithItemHit()
     {
-        $cacheItem = $this->prophesize(CacheItemInterface::class);
-        $cacheItem->isHit()->willReturn(true)->shouldBeCalled();
-        $cacheItem->get()->willReturn(new ResourceMetadata(null, 'Dummy.'))->shouldBeCalled();
+        $createCacheItemPool = function() {
+            $cacheItem = $this->prophesize(CacheItemInterface::class);
+            $cacheItem->isHit()->willReturn(true)->shouldBeCalled();
+            $cacheItem->get()->willReturn(new ResourceMetadata(null, 'Dummy.'))->shouldBeCalled();
 
-        $cacheItemPool = $this->prophesize(CacheItemPoolInterface::class);
-        $cacheItemPool->getItem($this->generateCacheKey())->willReturn($cacheItem->reveal())->shouldBeCalled();
+            $cacheItemPool = $this->prophesize(CacheItemPoolInterface::class);
+            $cacheItemPool->getItem($this->generateCacheKey())->willReturn($cacheItem->reveal())->shouldBeCalled();
+
+            return $cacheItemPool->reveal();
+        };
 
         $decoratedResourceMetadataFactory = $this->prophesize(ResourceMetadataFactoryInterface::class);
 
-        $cachedResourceMetadataFactory = new CachedResourceMetadataFactory($cacheItemPool->reveal(), $decoratedResourceMetadataFactory->reveal());
+        $cachedResourceMetadataFactory = new CachedResourceMetadataFactory($createCacheItemPool(), $decoratedResourceMetadataFactory->reveal());
         $resultedResourceMetadata = $cachedResourceMetadataFactory->create(Dummy::class);
 
         $this->assertInstanceOf(ResourceMetadata::class, $resultedResourceMetadata);

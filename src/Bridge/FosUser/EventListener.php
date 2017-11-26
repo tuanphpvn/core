@@ -41,15 +41,24 @@ final class EventListener
      */
     public function onKernelView(GetResponseForControllerResultEvent $event)
     {
-        $request = $event->getRequest();
-        if (!RequestAttributesExtractor::extractAttributes($request)) {
+        $isNotHandleThisRequest = function() use ($event){
+            $request = $event->getRequest();
+            if (!RequestAttributesExtractor::extractAttributes($request)) {
+                return true;
+            }
+
+            $user = $event->getControllerResult();
+            if (!$user instanceof UserInterface || $request->isMethodSafe(false)) {
+                return true;
+            }
+        };
+
+        if($isNotHandleThisRequest()) {
             return;
         }
 
+        $request = $event->getRequest();
         $user = $event->getControllerResult();
-        if (!$user instanceof UserInterface || $request->isMethodSafe(false)) {
-            return;
-        }
 
         switch ($request->getMethod()) {
             case Request::METHOD_DELETE:

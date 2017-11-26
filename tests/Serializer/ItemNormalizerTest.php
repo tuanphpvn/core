@@ -42,17 +42,22 @@ class ItemNormalizerTest extends \PHPUnit_Framework_TestCase
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
 
-        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
-        $resourceClassResolverProphecy->getResourceClass($dummy)->willReturn(Dummy::class)->shouldBeCalled();
-        $resourceClassResolverProphecy->getResourceClass($std)->willThrow(new InvalidArgumentException())->shouldBeCalled();
-        $resourceClassResolverProphecy->isResourceClass(Dummy::class)->willReturn(true)->shouldBeCalled();
-        $resourceClassResolverProphecy->isResourceClass(\stdClass::class)->willReturn(false)->shouldBeCalled();
+        $createResourceClassResolver = function() use ($dummy, $std) {
+            $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+            $resourceClassResolverProphecy->getResourceClass($dummy)->willReturn(Dummy::class)->shouldBeCalled();
+            $resourceClassResolverProphecy->getResourceClass($std)->willThrow(new InvalidArgumentException())->shouldBeCalled();
+            $resourceClassResolverProphecy->isResourceClass(Dummy::class)->willReturn(true)->shouldBeCalled();
+            $resourceClassResolverProphecy->isResourceClass(\stdClass::class)->willReturn(false)->shouldBeCalled();
+
+            return $resourceClassResolverProphecy->reveal();
+        };
+
 
         $normalizer = new ItemNormalizer(
             $propertyNameCollectionFactoryProphecy->reveal(),
             $propertyMetadataFactoryProphecy->reveal(),
             $iriConverterProphecy->reveal(),
-            $resourceClassResolverProphecy->reveal()
+            $createResourceClassResolver()
         );
 
         $this->assertTrue($normalizer->supportsNormalization($dummy));

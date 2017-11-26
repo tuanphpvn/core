@@ -47,7 +47,6 @@ class ApiPlatformParserTest extends \PHPUnit_Framework_TestCase
         $propertyMetadataFactory = $propertyMetadataFactoryProphecy->reveal();
 
         $apiPlatformParser = new ApiPlatformParser($resourceMetadataFactory, $propertyNameCollectionFactory, $propertyMetadataFactory);
-
         $this->assertInstanceOf(ParserInterface::class, $apiPlatformParser);
     }
 
@@ -91,40 +90,48 @@ class ApiPlatformParserTest extends \PHPUnit_Framework_TestCase
 
     public function testSupportsAttributeNormalization()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create('Acme\CustomAttributeDummy')->willReturn(new ResourceMetadata('dummy', 'dummy', null, [
-            'get' => ['method' => 'GET', 'normalization_context' => ['groups' => ['custom_attr_dummy_get']]],
-            'put' => ['method' => 'PUT', 'denormalization_context' => ['groups' => ['custom_attr_dummy_put']]],
-            'delete' => ['method' => 'DELETE'],
-        ], []))->shouldBeCalled();
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+        $createResourceMetadataFactory = function() {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create('Acme\CustomAttributeDummy')->willReturn(new ResourceMetadata('dummy', 'dummy', null, /** $itemOperations */[
+                'get' => ['method' => 'GET', 'normalization_context' => ['groups' => ['custom_attr_dummy_get']]],
+                'put' => ['method' => 'PUT', 'denormalization_context' => ['groups' => ['custom_attr_dummy_put']]],
+                'delete' => ['method' => 'DELETE'],
+            ], /** $collectionOperations */[]))->shouldBeCalled();
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create('Acme\CustomAttributeDummy', Argument::cetera())->willReturn(new PropertyNameCollection([
-            'id',
-            'name',
-        ]))->shouldBeCalled();
-        $propertyNameCollectionFactory = $propertyNameCollectionFactoryProphecy->reveal();
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $idPropertyMetadata = (new PropertyMetadata())
-            ->withType(new Type(Type::BUILTIN_TYPE_INT, false))
-            ->withDescription('The id.')
-            ->withReadable(true)
-            ->withWritable(false)
-            ->withRequired(true);
-        $propertyMetadataFactoryProphecy->create('Acme\CustomAttributeDummy', 'id')->willReturn($idPropertyMetadata)->shouldBeCalled();
-        $namePropertyMetadata = (new PropertyMetadata())
-            ->withType(new Type(Type::BUILTIN_TYPE_STRING, false))
-            ->withDescription('The dummy name.')
-            ->withReadable(true)
-            ->withWritable(true)
-            ->withRequired(true);
-        $propertyMetadataFactoryProphecy->create('Acme\CustomAttributeDummy', 'name')->willReturn($namePropertyMetadata)->shouldBeCalled();
+        $createPropertyNameCollectionFactory = function() {
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            $propertyNameCollectionFactoryProphecy->create('Acme\CustomAttributeDummy', Argument::cetera())->willReturn(new PropertyNameCollection([
+                'id',
+                'name',
+            ]))->shouldBeCalled();
 
-        $propertyMetadataFactory = $propertyMetadataFactoryProphecy->reveal();
+            return $propertyNameCollectionFactoryProphecy->reveal();
+        };
 
-        $apiPlatformParser = new ApiPlatformParser($resourceMetadataFactory, $propertyNameCollectionFactory, $propertyMetadataFactory);
+        $createPropertyMetadataFactory = function() {
+            $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $idPropertyMetadata = (new PropertyMetadata())
+                ->withType(new Type(Type::BUILTIN_TYPE_INT, false))
+                ->withDescription('The id.')
+                ->withReadable(true)
+                ->withWritable(false)
+                ->withRequired(true);
+            $propertyMetadataFactoryProphecy->create('Acme\CustomAttributeDummy', 'id')->willReturn($idPropertyMetadata)->shouldBeCalled();
+            $namePropertyMetadata = (new PropertyMetadata())
+                ->withType(new Type(Type::BUILTIN_TYPE_STRING, false))
+                ->withDescription('The dummy name.')
+                ->withReadable(true)
+                ->withWritable(true)
+                ->withRequired(true);
+            $propertyMetadataFactoryProphecy->create('Acme\CustomAttributeDummy', 'name')->willReturn($namePropertyMetadata)->shouldBeCalled();
+
+            return $propertyMetadataFactoryProphecy->reveal();
+        };
+
+        $apiPlatformParser = new ApiPlatformParser($createResourceMetadataFactory(), $createPropertyNameCollectionFactory(), $createPropertyMetadataFactory());
 
         $actual = $apiPlatformParser->parse([
             'class' => sprintf('%s:%s:%s', ApiPlatformParser::OUT_PREFIX, 'Acme\CustomAttributeDummy', 'get'),
@@ -148,17 +155,23 @@ class ApiPlatformParserTest extends \PHPUnit_Framework_TestCase
 
     public function testSupportsUnknownResource()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(UnknownDummy::class)->willThrow(ResourceClassNotFoundException::class)->shouldBeCalled();
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+        $createResourceMetadataFactory = function() {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(UnknownDummy::class)->willThrow(ResourceClassNotFoundException::class)->shouldBeCalled();
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactory = $propertyNameCollectionFactoryProphecy->reveal();
+        $createPropertyNameCollectionFactory = function() {
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            return $propertyNameCollectionFactoryProphecy->reveal();
+        };
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactory = $propertyMetadataFactoryProphecy->reveal();
+        $createPropertyMetadataFactory = function() {
+            $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            return $propertyMetadataFactoryProphecy->reveal();
+        };
 
-        $apiPlatformParser = new ApiPlatformParser($resourceMetadataFactory, $propertyNameCollectionFactory, $propertyMetadataFactory);
+        $apiPlatformParser = new ApiPlatformParser($createResourceMetadataFactory(), $createPropertyNameCollectionFactory(), $createPropertyMetadataFactory());
 
         $this->assertFalse($apiPlatformParser->supports([
             'class' => sprintf('%s:%s', ApiPlatformParser::OUT_PREFIX, UnknownDummy::class),
@@ -167,17 +180,24 @@ class ApiPlatformParserTest extends \PHPUnit_Framework_TestCase
 
     public function testSupportsUnsupportedClassFormat()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(Argument::any())->shouldNotBeCalled();
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+        $createResourceMetadataFactory = function() {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(Argument::any())->shouldNotBeCalled();
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactory = $propertyNameCollectionFactoryProphecy->reveal();
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactory = $propertyMetadataFactoryProphecy->reveal();
+        $createPropertyNameCollectionFactory = function() {
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            return $propertyNameCollectionFactoryProphecy->reveal();
+        };
 
-        $apiPlatformParser = new ApiPlatformParser($resourceMetadataFactory, $propertyNameCollectionFactory, $propertyMetadataFactory);
+        $createPropertyMetadataFactory = function() {
+            $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            return $propertyMetadataFactoryProphecy->reveal();
+        };
+
+        $apiPlatformParser = new ApiPlatformParser($createResourceMetadataFactory(), $createPropertyNameCollectionFactory(), $createPropertyMetadataFactory());
 
         $this->assertFalse($apiPlatformParser->supports([
             'class' => Dummy::class,
@@ -186,48 +206,56 @@ class ApiPlatformParserTest extends \PHPUnit_Framework_TestCase
 
     public function testParse()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('dummy', 'dummy', null, [
-            'get' => ['method' => 'GET', 'normalization_context' => ['groups' => ['custom_attr_dummy_get']]],
-            'put' => ['method' => 'PUT', 'denormalization_context' => ['groups' => ['custom_attr_dummy_put']]],
-            'gerard' => ['method' => 'get', 'path' => '/gerard', 'denormalization_context' => ['groups' => ['custom_attr_dummy_put']]],
-            'delete' => ['method' => 'DELETE'],
-        ], []))->shouldBeCalled();
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+        $createResourceMetadataFactory = function() {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('dummy', 'dummy', null, /** $itemOperations */[
+                'get' => ['method' => 'GET', 'normalization_context' => ['groups' => ['custom_attr_dummy_get']]],
+                'put' => ['method' => 'PUT', 'denormalization_context' => ['groups' => ['custom_attr_dummy_put']]],
+                'gerard' => ['method' => 'get', 'path' => '/gerard', 'denormalization_context' => ['groups' => ['custom_attr_dummy_put']]],
+                'delete' => ['method' => 'DELETE'],
+            ], /** $collectionOperationsm */[]))->shouldBeCalled();
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
-            'id',
-            'name',
-            'dummyPrice',
-        ]))->shouldBeCalled();
-        $propertyNameCollectionFactory = $propertyNameCollectionFactoryProphecy->reveal();
+        $createPropertyNameCollectionFactory = function() {
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            $propertyNameCollectionFactoryProphecy->create(Dummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
+                'id',
+                'name',
+                'dummyPrice',
+            ]))->shouldBeCalled();
+            return $propertyNameCollectionFactoryProphecy->reveal();
+        };
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $idPropertyMetadata = (new PropertyMetadata())
-            ->withType(new Type(Type::BUILTIN_TYPE_INT, false))
-            ->withDescription('The id.')
-            ->withReadable(true)
-            ->withWritable(false)
-            ->withRequired(true);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'id')->willReturn($idPropertyMetadata)->shouldBeCalled();
-        $namePropertyMetadata = (new PropertyMetadata())
-            ->withType(new Type(Type::BUILTIN_TYPE_STRING, false))
-            ->withDescription('The dummy name.')
-            ->withReadable(true)
-            ->withWritable(true)
-            ->withRequired(true);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name')->willReturn($namePropertyMetadata)->shouldBeCalled();
-        $dummyPricePropertyMetadata = (new PropertyMetadata())
-            ->withType(new Type(Type::BUILTIN_TYPE_FLOAT, true))
-            ->withDescription('A dummy price.')
-            ->withReadable(true)
-            ->withWritable(true)
-            ->withRequired(false);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'dummyPrice')->willReturn($dummyPricePropertyMetadata)->shouldBeCalled();
-        $propertyMetadataFactory = $propertyMetadataFactoryProphecy->reveal();
+        $createPropertyMetadataFactory = function() {
+            $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $idPropertyMetadata = (new PropertyMetadata())
+                ->withType(new Type(Type::BUILTIN_TYPE_INT, false))
+                ->withDescription('The id.')
+                ->withReadable(true)
+                ->withWritable(false)
+                ->withRequired(true);
+            $propertyMetadataFactoryProphecy->create(Dummy::class, 'id')->willReturn($idPropertyMetadata)->shouldBeCalled();
+            $namePropertyMetadata = (new PropertyMetadata())
+                ->withType(new Type(Type::BUILTIN_TYPE_STRING, false))
+                ->withDescription('The dummy name.')
+                ->withReadable(true)
+                ->withWritable(true)
+                ->withRequired(true);
+            $propertyMetadataFactoryProphecy->create(Dummy::class, 'name')->willReturn($namePropertyMetadata)->shouldBeCalled();
+            $dummyPricePropertyMetadata = (new PropertyMetadata())
+                ->withType(new Type(Type::BUILTIN_TYPE_FLOAT, true))
+                ->withDescription('A dummy price.')
+                ->withReadable(true)
+                ->withWritable(true)
+                ->withRequired(false);
+            $propertyMetadataFactoryProphecy->create(Dummy::class, 'dummyPrice')->willReturn($dummyPricePropertyMetadata)->shouldBeCalled();
 
-        $apiPlatformParser = new ApiPlatformParser($resourceMetadataFactory, $propertyNameCollectionFactory, $propertyMetadataFactory);
+            return $propertyMetadataFactoryProphecy->reveal();
+        };
+
+
+        $apiPlatformParser = new ApiPlatformParser($createResourceMetadataFactory(), $createPropertyNameCollectionFactory(),$createPropertyMetadataFactory());
 
         $actual = $apiPlatformParser->parse([
             'class' => sprintf('%s:%s:%s', ApiPlatformParser::OUT_PREFIX, Dummy::class, 'gerard'),
@@ -257,27 +285,33 @@ class ApiPlatformParserTest extends \PHPUnit_Framework_TestCase
 
     public function testParseDateTime()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('dummy', 'dummy', null, [], []))->shouldBeCalled();
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+        $createResourceMetadataFactory = function() {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('dummy', 'dummy', null, [], []))->shouldBeCalled();
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
-            'dummyDate',
-        ]))->shouldBeCalled();
-        $propertyNameCollectionFactory = $propertyNameCollectionFactoryProphecy->reveal();
+        $createPropertyNameCollectionFactory = function() {
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            $propertyNameCollectionFactoryProphecy->create(Dummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
+                'dummyDate',
+            ]))->shouldBeCalled();
+            return $propertyNameCollectionFactoryProphecy->reveal();
+        };
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $dummyDatePropertyMetadata = (new PropertyMetadata())
-            ->withType(new Type(Type::BUILTIN_TYPE_OBJECT, true, \DateTime::class))
-            ->withDescription('A dummy date.')
-            ->withReadable(true)
-            ->withWritable(true)
-            ->withRequired(false);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'dummyDate')->willReturn($dummyDatePropertyMetadata)->shouldBeCalled();
-        $propertyMetadataFactory = $propertyMetadataFactoryProphecy->reveal();
+        $createPropertyMetadataFactory = function() {
+            $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $dummyDatePropertyMetadata = (new PropertyMetadata())
+                ->withType(new Type(Type::BUILTIN_TYPE_OBJECT, true, \DateTime::class))
+                ->withDescription('A dummy date.')
+                ->withReadable(true)
+                ->withWritable(true)
+                ->withRequired(false);
+            $propertyMetadataFactoryProphecy->create(Dummy::class, 'dummyDate')->willReturn($dummyDatePropertyMetadata)->shouldBeCalled();
+            return $propertyMetadataFactoryProphecy->reveal();
+        };
 
-        $apiPlatformParser = new ApiPlatformParser($resourceMetadataFactory, $propertyNameCollectionFactory, $propertyMetadataFactory);
+        $apiPlatformParser = new ApiPlatformParser($createResourceMetadataFactory(), $createPropertyNameCollectionFactory(), $createPropertyMetadataFactory());
 
         $actual = $apiPlatformParser->parse([
             'class' => sprintf('%s:%s:%s', ApiPlatformParser::OUT_PREFIX, Dummy::class, 'get'),
@@ -296,54 +330,62 @@ class ApiPlatformParserTest extends \PHPUnit_Framework_TestCase
 
     public function testParseRelation()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('dummy', 'dummy', null, [], []))->shouldBeCalled();
-        $resourceMetadataFactoryProphecy->create(RelatedDummy::class)->willReturn(new ResourceMetadata())->shouldBeCalled();
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+        $createResourceMetadataFactory = function() {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('dummy', 'dummy', null, [], []))->shouldBeCalled();
+            $resourceMetadataFactoryProphecy->create(RelatedDummy::class)->willReturn(new ResourceMetadata())->shouldBeCalled();
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
-            'relatedDummy',
-            'relatedDummies',
-        ]))->shouldBeCalled();
-        $propertyNameCollectionFactoryProphecy->create(RelatedDummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
-            'id',
-            'name',
-        ]))->shouldBeCalled();
-        $propertyNameCollectionFactory = $propertyNameCollectionFactoryProphecy->reveal();
+        $createPropertyNameCollectionFactory = function() {
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            $propertyNameCollectionFactoryProphecy->create(Dummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
+                'relatedDummy',
+                'relatedDummies',
+            ]))->shouldBeCalled();
+            $propertyNameCollectionFactoryProphecy->create(RelatedDummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
+                'id',
+                'name',
+            ]))->shouldBeCalled();
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $relatedDummyPropertyMetadata = (new PropertyMetadata())
-            ->withType(new Type(Type::BUILTIN_TYPE_OBJECT, true, RelatedDummy::class))
-            ->withDescription('A related dummy.')
-            ->withReadable(true)
-            ->withWritable(true)
-            ->withRequired(false);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy')->willReturn($relatedDummyPropertyMetadata)->shouldBeCalled();
-        $relatedDummiesPropertyMetadata = (new PropertyMetadata())
-            ->withType(new Type(Type::BUILTIN_TYPE_OBJECT, false, 'Doctrine\Common\Collections\Collection', true, new Type(Type::BUILTIN_TYPE_INT), new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class)))
-            ->withDescription('Several dummies.')
-            ->withReadable(true)
-            ->withWritable(true)
-            ->withReadableLink(true)
-            ->withRequired(false);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies')->willReturn($relatedDummiesPropertyMetadata)->shouldBeCalled();
-        $idPropertyMetadata = (new PropertyMetadata())
-            ->withType(new Type(Type::BUILTIN_TYPE_INT, false))
-            ->withReadable(true)
-            ->withWritable(false)
-            ->withRequired(true);
-        $propertyMetadataFactoryProphecy->create(RelatedDummy::class, 'id')->willReturn($idPropertyMetadata)->shouldBeCalled();
-        $namePropertyMetadata = (new PropertyMetadata())
-            ->withType(new Type(Type::BUILTIN_TYPE_STRING, false))
-            ->withDescription('A name.')
-            ->withReadable(true)
-            ->withWritable(true)
-            ->withRequired(false);
-        $propertyMetadataFactoryProphecy->create(RelatedDummy::class, 'name')->willReturn($namePropertyMetadata)->shouldBeCalled();
-        $propertyMetadataFactory = $propertyMetadataFactoryProphecy->reveal();
+            return $propertyNameCollectionFactoryProphecy->reveal();
+        };
 
-        $apiPlatformParser = new ApiPlatformParser($resourceMetadataFactory, $propertyNameCollectionFactory, $propertyMetadataFactory);
+        $createPropertyMetadataFactory = function() {
+            $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $relatedDummyPropertyMetadata = (new PropertyMetadata())
+                ->withType(new Type(Type::BUILTIN_TYPE_OBJECT, true, RelatedDummy::class))
+                ->withDescription('A related dummy.')
+                ->withReadable(true)
+                ->withWritable(true)
+                ->withRequired(false);
+            $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy')->willReturn($relatedDummyPropertyMetadata)->shouldBeCalled();
+            $relatedDummiesPropertyMetadata = (new PropertyMetadata())
+                ->withType(new Type(Type::BUILTIN_TYPE_OBJECT, false, 'Doctrine\Common\Collections\Collection', true, new Type(Type::BUILTIN_TYPE_INT), new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummy::class)))
+                ->withDescription('Several dummies.')
+                ->withReadable(true)
+                ->withWritable(true)
+                ->withReadableLink(true)
+                ->withRequired(false);
+            $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummies')->willReturn($relatedDummiesPropertyMetadata)->shouldBeCalled();
+            $idPropertyMetadata = (new PropertyMetadata())
+                ->withType(new Type(Type::BUILTIN_TYPE_INT, false))
+                ->withReadable(true)
+                ->withWritable(false)
+                ->withRequired(true);
+            $propertyMetadataFactoryProphecy->create(RelatedDummy::class, 'id')->willReturn($idPropertyMetadata)->shouldBeCalled();
+            $namePropertyMetadata = (new PropertyMetadata())
+                ->withType(new Type(Type::BUILTIN_TYPE_STRING, false))
+                ->withDescription('A name.')
+                ->withReadable(true)
+                ->withWritable(true)
+                ->withRequired(false);
+            $propertyMetadataFactoryProphecy->create(RelatedDummy::class, 'name')->willReturn($namePropertyMetadata)->shouldBeCalled();
+
+            return $propertyMetadataFactoryProphecy->reveal();
+        };
+
+        $apiPlatformParser = new ApiPlatformParser($createResourceMetadataFactory(), $createPropertyNameCollectionFactory(), $createPropertyMetadataFactory());
 
         $actual = $apiPlatformParser->parse([
             'class' => sprintf('%s:%s:%s', ApiPlatformParser::OUT_PREFIX, Dummy::class, 'get'),
@@ -384,31 +426,40 @@ class ApiPlatformParserTest extends \PHPUnit_Framework_TestCase
 
     public function testParseWithNameConverter()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('dummy', 'dummy', null, [], []))->shouldBeCalled();
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+        $createResourceMetadataFactory = function() {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('dummy', 'dummy', null, [], []))->shouldBeCalled();
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
-            'nameConverted',
-        ]))->shouldBeCalled();
-        $propertyNameCollectionFactory = $propertyNameCollectionFactoryProphecy->reveal();
+        $createPropertyNameCollectionFactory = function() {
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            $propertyNameCollectionFactoryProphecy->create(Dummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
+                'nameConverted',
+            ]))->shouldBeCalled();
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $nameConvertedPropertyMetadata = (new PropertyMetadata())
-            ->withType(new Type(Type::BUILTIN_TYPE_STRING, true))
-            ->withDescription('A converted name')
-            ->withReadable(true)
-            ->withWritable(true)
-            ->withRequired(false);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'nameConverted')->willReturn($nameConvertedPropertyMetadata)->shouldBeCalled();
-        $propertyMetadataFactory = $propertyMetadataFactoryProphecy->reveal();
+            return $propertyNameCollectionFactoryProphecy->reveal();
+        };
 
-        $nameConverterProphecy = $this->prophesize(NameConverterInterface::class);
-        $nameConverterProphecy->normalize('nameConverted')->willReturn('name_converted')->shouldBeCalled();
-        $nameConverter = $nameConverterProphecy->reveal();
+        $createPropertyMetadataFactory = function() {
+            $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $nameConvertedPropertyMetadata = (new PropertyMetadata())
+                ->withType(new Type(Type::BUILTIN_TYPE_STRING, true))
+                ->withDescription('A converted name')
+                ->withReadable(true)
+                ->withWritable(true)
+                ->withRequired(false);
+            $propertyMetadataFactoryProphecy->create(Dummy::class, 'nameConverted')->willReturn($nameConvertedPropertyMetadata)->shouldBeCalled();
+            return $propertyMetadataFactoryProphecy->reveal();
+        };
 
-        $apiPlatformParser = new ApiPlatformParser($resourceMetadataFactory, $propertyNameCollectionFactory, $propertyMetadataFactory, $nameConverter);
+        $createNameConverter = function() {
+            $nameConverterProphecy = $this->prophesize(NameConverterInterface::class);
+            $nameConverterProphecy->normalize('nameConverted')->willReturn('name_converted')->shouldBeCalled();
+            return $nameConverterProphecy->reveal();
+        };
+
+        $apiPlatformParser = new ApiPlatformParser($createResourceMetadataFactory(), $createPropertyNameCollectionFactory(), $createPropertyMetadataFactory(), $createNameConverter());
 
         $actual = $apiPlatformParser->parse([
             'class' => sprintf('%s:%s:%s', ApiPlatformParser::OUT_PREFIX, Dummy::class, 'get'),
@@ -426,42 +477,50 @@ class ApiPlatformParserTest extends \PHPUnit_Framework_TestCase
 
     public function testParseRecursive()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('dummy', 'dummy', null, [], []))->shouldBeCalled();
-        $resourceMetadataFactoryProphecy->create(RelatedDummy::class)->willReturn(new ResourceMetadata())->shouldBeCalled();
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+        $createResourceMetadataFactory = function() {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('dummy', 'dummy', null, [], []))->shouldBeCalled();
+            $resourceMetadataFactoryProphecy->create(RelatedDummy::class)->willReturn(new ResourceMetadata())->shouldBeCalled();
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(Dummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
-            'relatedDummy',
-        ]))->shouldBeCalled();
-        $propertyNameCollectionFactoryProphecy->create(RelatedDummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
-            'dummy',
-        ]))->shouldBeCalled();
-        $propertyNameCollectionFactory = $propertyNameCollectionFactoryProphecy->reveal();
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $relatedDummyMetadatata = (new PropertyMetadata())
-            ->withType(new Type(Type::BUILTIN_TYPE_OBJECT, true, RelatedDummy::class))
-            ->withDescription('A related Dummy.')
-            ->withReadable(true)
-            ->withReadableLink(true)
-            ->withWritableLink(true)
-            ->withWritable(true)
-            ->withRequired(false);
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy')->willReturn($relatedDummyMetadatata)->shouldBeCalled();
-        $dummyMetadata = (new PropertyMetadata())
-            ->withType(new Type(Type::BUILTIN_TYPE_OBJECT, true, Dummy::class))
-            ->withDescription('A Dummy.')
-            ->withReadable(true)
-            ->withWritable(true)
-            ->withReadableLink(true)
-            ->withWritableLink(true)
-            ->withRequired(false);
-        $propertyMetadataFactoryProphecy->create(RelatedDummy::class, 'dummy')->willReturn($dummyMetadata)->shouldBeCalled();
-        $propertyMetadataFactory = $propertyMetadataFactoryProphecy->reveal();
+        $createPropertyNameCollectionFactory = function() {
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            $propertyNameCollectionFactoryProphecy->create(Dummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
+                'relatedDummy',
+            ]))->shouldBeCalled();
+            $propertyNameCollectionFactoryProphecy->create(RelatedDummy::class, Argument::cetera())->willReturn(new PropertyNameCollection([
+                'dummy',
+            ]))->shouldBeCalled();
+            return $propertyNameCollectionFactoryProphecy->reveal();
+        };
 
-        $apiPlatformParser = new ApiPlatformParser($resourceMetadataFactory, $propertyNameCollectionFactory, $propertyMetadataFactory);
+        $createPropertyMetadataFactory = function() {
+            $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $relatedDummyMetadatata = (new PropertyMetadata())
+                ->withType(new Type(Type::BUILTIN_TYPE_OBJECT, true, RelatedDummy::class))
+                ->withDescription('A related Dummy.')
+                ->withReadable(true)
+                ->withReadableLink(true)
+                ->withWritableLink(true)
+                ->withWritable(true)
+                ->withRequired(false);
+            $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy')->willReturn($relatedDummyMetadatata)->shouldBeCalled();
+            $dummyMetadata = (new PropertyMetadata())
+                ->withType(new Type(Type::BUILTIN_TYPE_OBJECT, true, Dummy::class))
+                ->withDescription('A Dummy.')
+                ->withReadable(true)
+                ->withWritable(true)
+                ->withReadableLink(true)
+                ->withWritableLink(true)
+                ->withRequired(false);
+            $propertyMetadataFactoryProphecy->create(RelatedDummy::class, 'dummy')->willReturn($dummyMetadata)->shouldBeCalled();
+
+            return $propertyMetadataFactoryProphecy->reveal();
+        };
+
+        $apiPlatformParser = new ApiPlatformParser($createResourceMetadataFactory(), $createPropertyNameCollectionFactory(), $createPropertyMetadataFactory());
 
         $actual = $apiPlatformParser->parse([
             'class' => sprintf('%s:%s:%s', ApiPlatformParser::OUT_PREFIX, Dummy::class, 'get'),

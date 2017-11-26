@@ -24,9 +24,12 @@ class PhpDocResourceMetadataFactoryTest extends \PHPUnit_Framework_TestCase
     public function testExistingDescription()
     {
         $resourceMetadata = new ResourceMetadata(null, 'My desc');
-        $decoratedProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $decoratedProphecy->create('Foo')->willReturn($resourceMetadata)->shouldBeCalled();
-        $decorated = $decoratedProphecy->reveal();
+        $createDecorated = function() use ($resourceMetadata) {
+            $decoratedProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $decoratedProphecy->create('Foo')->willReturn($resourceMetadata)->shouldBeCalled();
+            return $decoratedProphecy->reveal();
+        };
+        $decorated = $createDecorated();
 
         $factory = new PhpDocResourceMetadataFactory($decorated);
         $this->assertSame($resourceMetadata, $factory->create('Foo'));

@@ -64,24 +64,27 @@ class ItemNormalizerTest extends \PHPUnit_Framework_TestCase
         $dummy = new Dummy();
         $dummy->setDescription('hello');
 
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
-        $contextBuilderProphecy = $this->prophesize(ContextBuilderInterface::class);
+        $createNormalizer = function() use ($dummy, $std) {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+            $contextBuilderProphecy = $this->prophesize(ContextBuilderInterface::class);
 
-        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
-        $resourceClassResolverProphecy->getResourceClass($dummy)->willReturn(Dummy::class)->shouldBeCalled();
-        $resourceClassResolverProphecy->getResourceClass($std)->willThrow(new InvalidArgumentException())->shouldBeCalled();
+            $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+            $resourceClassResolverProphecy->getResourceClass($dummy)->willReturn(Dummy::class)->shouldBeCalled();
+            $resourceClassResolverProphecy->getResourceClass($std)->willThrow(new InvalidArgumentException())->shouldBeCalled();
 
-        $normalizer = new ItemNormalizer(
-            $resourceMetadataFactoryProphecy->reveal(),
-            $propertyNameCollectionFactoryProphecy->reveal(),
-            $propertyMetadataFactoryProphecy->reveal(),
-            $iriConverterProphecy->reveal(),
-            $resourceClassResolverProphecy->reveal(),
-            $contextBuilderProphecy->reveal()
-        );
+            return new ItemNormalizer(
+                $resourceMetadataFactoryProphecy->reveal(),
+                $propertyNameCollectionFactoryProphecy->reveal(),
+                $propertyMetadataFactoryProphecy->reveal(),
+                $iriConverterProphecy->reveal(),
+                $resourceClassResolverProphecy->reveal(),
+                $contextBuilderProphecy->reveal()
+            );
+        };
+        $normalizer = $createNormalizer();
 
         $this->assertTrue($normalizer->supportsNormalization($dummy, 'jsonld'));
         $this->assertFalse($normalizer->supportsNormalization($dummy, 'xml'));

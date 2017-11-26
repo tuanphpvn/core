@@ -24,15 +24,25 @@ class VarnishPurgerTest extends \PHPUnit_Framework_TestCase
 {
     public function testPurge()
     {
-        $clientProphecy1 = $this->prophesize(ClientInterface::class);
-        $clientProphecy1->request('BAN', '', ['headers' => ['ApiPlatform-Ban-Regex' => '(^|\,)/foo($|\,)']])->willReturn(new Response())->shouldBeCalled();
-        $clientProphecy1->request('BAN', '', ['headers' => ['ApiPlatform-Ban-Regex' => '((^|\,)/foo($|\,))|((^|\,)/bar($|\,))']])->willReturn(new Response())->shouldBeCalled();
+        $createClient1 = function() {
+            $clientProphecy1 = $this->prophesize(ClientInterface::class);
+            $clientProphecy1->request('BAN', /** $uri */'', ['headers' => ['ApiPlatform-Ban-Regex' => '(^|\,)/foo($|\,)']])->willReturn(new Response())->shouldBeCalled();
+            $clientProphecy1->request('BAN', /** $uri */'', ['headers' => ['ApiPlatform-Ban-Regex' => '((^|\,)/foo($|\,))|((^|\,)/bar($|\,))']])->willReturn(new Response())->shouldBeCalled();
 
-        $clientProphecy2 = $this->prophesize(ClientInterface::class);
-        $clientProphecy2->request('BAN', '', ['headers' => ['ApiPlatform-Ban-Regex' => '(^|\,)/foo($|\,)']])->willReturn(new Response())->shouldBeCalled();
-        $clientProphecy2->request('BAN', '', ['headers' => ['ApiPlatform-Ban-Regex' => '((^|\,)/foo($|\,))|((^|\,)/bar($|\,))']])->willReturn(new Response())->shouldBeCalled();
+            return $clientProphecy1->reveal();
+        };
+        $client1 = $createClient1();
 
-        $purger = new VarnishPurger([$clientProphecy1->reveal(), $clientProphecy2->reveal()]);
+        $createClient2 = function() {
+            $clientProphecy2 = $this->prophesize(ClientInterface::class);
+            $clientProphecy2->request('BAN', /** $uri */'', ['headers' => ['ApiPlatform-Ban-Regex' => '(^|\,)/foo($|\,)']])->willReturn(new Response())->shouldBeCalled();
+            $clientProphecy2->request('BAN', /** $uri */'', ['headers' => ['ApiPlatform-Ban-Regex' => '((^|\,)/foo($|\,))|((^|\,)/bar($|\,))']])->willReturn(new Response())->shouldBeCalled();
+
+            return $clientProphecy2->reveal();
+        };
+        $client2 = $createClient2();
+
+        $purger = new VarnishPurger([$client1, $client2]);
         $purger->purge(['/foo']);
         $purger->purge(['/foo' => '/foo', '/bar' => '/bar']);
     }

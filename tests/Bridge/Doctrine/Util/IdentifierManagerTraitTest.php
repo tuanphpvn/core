@@ -48,6 +48,7 @@ class IdentifierManagerTraitTest extends \PHPUnit_Framework_TestCase
         list($propertyNameCollectionFactory, $propertyMetadataFactory) = $this->getMetadataFactories(Dummy::class, [
             'id',
         ]);
+
         $objectManager = $this->getObjectManager(Dummy::class, [
             'id' => [
                 'type' => DBALType::INTEGER,
@@ -56,7 +57,7 @@ class IdentifierManagerTraitTest extends \PHPUnit_Framework_TestCase
 
         $identifierManager = $this->getIdentifierManagerTraitImpl($propertyNameCollectionFactory, $propertyMetadataFactory);
 
-        $this->assertEquals($identifierManager->normalizeIdentifiers(1, $objectManager, Dummy::class), ['id' => 1]);
+        $this->assertEquals(['id' => 1], $identifierManager->normalizeIdentifiers(1, $objectManager, Dummy::class));
     }
 
     public function testCompositeIdentifier()
@@ -89,7 +90,7 @@ class IdentifierManagerTraitTest extends \PHPUnit_Framework_TestCase
             'ida',
             'idb',
         ]);
-        $objectManager = $this->getObjectManager(Dummy::class, [
+        $objectManager = $this->getObjectManager(Dummy::class, /** $identifierFields */[
             'ida' => [
                 'type' => DBALType::INTEGER,
             ],
@@ -113,25 +114,38 @@ class IdentifierManagerTraitTest extends \PHPUnit_Framework_TestCase
      */
     private function getMetadataFactories(string $resourceClass, array $identifiers): array
     {
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-
         $nameCollection = ['foobar'];
 
-        foreach ($identifiers as $identifier) {
-            $metadata = new PropertyMetadata();
-            $metadata = $metadata->withIdentifier(true);
-            $propertyMetadataFactoryProphecy->create($resourceClass, $identifier)->willReturn($metadata);
+        $createPropertyMetadataFactory = function() use ($identifiers, $resourceClass, $nameCollection) {
+            $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
 
-            $nameCollection[] = $identifier;
-        }
+            foreach ($identifiers as $identifier) {
+                $metadata = new PropertyMetadata();
+                $metadata = $metadata->withIdentifier(true);
+                $propertyMetadataFactoryProphecy->create($resourceClass, $identifier)->willReturn($metadata);
 
-        //random property to prevent the use of non-identifiers metadata while looping
-        $propertyMetadataFactoryProphecy->create($resourceClass, 'foobar')->willReturn(new PropertyMetadata());
+                $nameCollection[] = $identifier;
+            }
 
-        $propertyNameCollectionFactoryProphecy->create($resourceClass)->willReturn(new PropertyNameCollection($nameCollection));
+            //random property to prevent the use of non-identifiers metadata while looping
+            $propertyMetadataFactoryProphecy->create($resourceClass, 'foobar')->willReturn(new PropertyMetadata());
 
-        return [$propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal()];
+            return $propertyMetadataFactoryProphecy->reveal();
+        };
+
+        $createPropertyNameCollectionFactory = function() use ($resourceClass, $nameCollection, $identifiers) {
+
+            foreach ($identifiers as $identifier) {
+                $nameCollection[] = $identifier;
+            }
+
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            $propertyNameCollectionFactoryProphecy->create($resourceClass)->willReturn(new PropertyNameCollection($nameCollection));
+
+            return $propertyNameCollectionFactoryProphecy->reveal();
+        };
+
+        return [$createPropertyNameCollectionFactory(), $createPropertyMetadataFactory()];
     }
 
     /**

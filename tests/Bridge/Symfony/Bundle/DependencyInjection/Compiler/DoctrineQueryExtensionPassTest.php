@@ -43,16 +43,19 @@ class DoctrineQueryExtensionPassTest extends \PHPUnit_Framework_TestCase
         $subresourceDataProviderDefinitionProphecy->replaceArgument(4, Argument::type('array'))->shouldBeCalled();
         $subresourceDataProviderDefinition = $subresourceDataProviderDefinitionProphecy->reveal();
 
-        $containerBuilderProphecy = $this->prophesize(ContainerBuilder::class);
-        $containerBuilderProphecy->hasDefinition('api_platform.doctrine.metadata_factory')->willReturn(true)->shouldBeCalled();
-        $containerBuilderProphecy->findTaggedServiceIds('api_platform.doctrine.orm.query_extension.collection', true)->willReturn(['foo' => [], 'bar' => ['priority' => 1]])->shouldBeCalled();
-        $containerBuilderProphecy->findTaggedServiceIds('api_platform.doctrine.orm.query_extension.item', true)->willReturn(['foo' => [], 'bar' => ['priority' => 1]])->shouldBeCalled();
+        $createContainerBuilder = function() use ($collectionDataProviderDefinition, $itemDataProviderDefinition, $subresourceDataProviderDefinition) {
+            $containerBuilderProphecy = $this->prophesize(ContainerBuilder::class);
+            $containerBuilderProphecy->hasDefinition('api_platform.doctrine.metadata_factory')->willReturn(true)->shouldBeCalled();
+            $containerBuilderProphecy->findTaggedServiceIds('api_platform.doctrine.orm.query_extension.collection', true)->willReturn(['foo' => [], 'bar' => ['priority' => 1]])->shouldBeCalled();
+            $containerBuilderProphecy->findTaggedServiceIds('api_platform.doctrine.orm.query_extension.item', true)->willReturn(['foo' => [], 'bar' => ['priority' => 1]])->shouldBeCalled();
 
-        $containerBuilderProphecy->getDefinition('api_platform.doctrine.orm.collection_data_provider')->willReturn($collectionDataProviderDefinition)->shouldBeCalled();
-        $containerBuilderProphecy->getDefinition('api_platform.doctrine.orm.item_data_provider')->willReturn($itemDataProviderDefinition)->shouldBeCalled();
-        $containerBuilderProphecy->getDefinition('api_platform.doctrine.orm.subresource_data_provider')->willReturn($subresourceDataProviderDefinition)->shouldBeCalled();
-        $containerBuilder = $containerBuilderProphecy->reveal();
+            $containerBuilderProphecy->getDefinition('api_platform.doctrine.orm.collection_data_provider')->willReturn($collectionDataProviderDefinition)->shouldBeCalled();
+            $containerBuilderProphecy->getDefinition('api_platform.doctrine.orm.item_data_provider')->willReturn($itemDataProviderDefinition)->shouldBeCalled();
+            $containerBuilderProphecy->getDefinition('api_platform.doctrine.orm.subresource_data_provider')->willReturn($subresourceDataProviderDefinition)->shouldBeCalled();
 
-        $dataProviderPass->process($containerBuilder);
+            return $containerBuilderProphecy->reveal();
+        };
+
+        $dataProviderPass->process($createContainerBuilder());
     }
 }

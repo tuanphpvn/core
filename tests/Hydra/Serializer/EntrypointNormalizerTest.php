@@ -32,11 +32,14 @@ class EntrypointNormalizerTest extends \PHPUnit_Framework_TestCase
         $collection = new ResourceNameCollection();
         $entrypoint = new Entrypoint($collection);
 
-        $factoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
-        $urlGeneratorProphecy = $this->prophesize(UrlGeneratorInterface::class);
+        $createNormalizer = function() {
+            $factoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+            $urlGeneratorProphecy = $this->prophesize(UrlGeneratorInterface::class);
 
-        $normalizer = new EntrypointNormalizer($factoryProphecy->reveal(), $iriConverterProphecy->reveal(), $urlGeneratorProphecy->reveal());
+            return new EntrypointNormalizer($factoryProphecy->reveal(), $iriConverterProphecy->reveal(), $urlGeneratorProphecy->reveal());
+        };
+        $normalizer = $createNormalizer();
 
         $this->assertTrue($normalizer->supportsNormalization($entrypoint, EntrypointNormalizer::FORMAT));
         $this->assertFalse($normalizer->supportsNormalization($entrypoint, 'json'));
@@ -48,17 +51,29 @@ class EntrypointNormalizerTest extends \PHPUnit_Framework_TestCase
         $collection = new ResourceNameCollection([Dummy::class]);
         $entrypoint = new Entrypoint($collection);
 
-        $factoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $factoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('Dummy', null, null, null, ['get']))->shouldBeCalled();
+        $createFactory = function() {
+            $factoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $factoryProphecy->create(Dummy::class)->willReturn(new ResourceMetadata('Dummy', null, null, null, ['get']))->shouldBeCalled();
 
-        $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
-        $iriConverterProphecy->getIriFromResourceClass(Dummy::class)->willReturn('/api/dummies')->shouldBeCalled();
+            return $factoryProphecy->reveal();
+        };
 
-        $urlGeneratorProphecy = $this->prophesize(UrlGeneratorInterface::class);
-        $urlGeneratorProphecy->generate('api_entrypoint')->willReturn('/api')->shouldBeCalled();
-        $urlGeneratorProphecy->generate('api_jsonld_context', ['shortName' => 'Entrypoint'])->willReturn('/context/Entrypoint')->shouldBeCalled();
+        $createIriConverter = function() {
+            $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+            $iriConverterProphecy->getIriFromResourceClass(Dummy::class)->willReturn('/api/dummies')->shouldBeCalled();
 
-        $normalizer = new EntrypointNormalizer($factoryProphecy->reveal(), $iriConverterProphecy->reveal(), $urlGeneratorProphecy->reveal());
+            return $iriConverterProphecy->reveal();
+        };
+
+        $createUrlGenerator = function() {
+            $urlGeneratorProphecy = $this->prophesize(UrlGeneratorInterface::class);
+            $urlGeneratorProphecy->generate('api_entrypoint')->willReturn('/api')->shouldBeCalled();
+            $urlGeneratorProphecy->generate('api_jsonld_context', ['shortName' => 'Entrypoint'])->willReturn('/context/Entrypoint')->shouldBeCalled();
+
+            return $urlGeneratorProphecy->reveal();
+        };
+
+        $normalizer = new EntrypointNormalizer($createFactory(), $createIriConverter(), $createUrlGenerator());
 
         $expected = [
             '@context' => '/context/Entrypoint',

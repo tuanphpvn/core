@@ -29,19 +29,27 @@ class InheritedPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
 {
     public function testCreate()
     {
-        $resourceNameCollectionFactory = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
-        $resourceNameCollectionFactory->create()->willReturn(new ResourceNameCollection([DummyTableInheritance::class, DummyTableInheritanceChild::class]))->shouldBeCalled();
+        $createResourceNameCollectionFactory = function() {
+            $resourceNameCollectionFactory = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+            $resourceNameCollectionFactory->create()->willReturn(new ResourceNameCollection([DummyTableInheritance::class, DummyTableInheritanceChild::class]))->shouldBeCalled();
+            return $resourceNameCollectionFactory->reveal();
+        };
 
         $type = new Type(Type::BUILTIN_TYPE_STRING);
-        $nicknameMetadata = new PropertyMetadata($type, 'nickname', true, true, false, false, true, false, 'http://example.com/foo', null, ['foo' => 'bar']);
-        $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactory->create(DummyTableInheritance::class, 'nickname', [])->willReturn($nicknameMetadata)->shouldBeCalled();
-        $propertyMetadataFactory->create(DummyTableInheritanceChild::class, 'nickname', [])->willReturn($nicknameMetadata)->shouldBeCalled();
 
-        $factory = new InheritedPropertyMetadataFactory($resourceNameCollectionFactory->reveal(), $propertyMetadataFactory->reveal());
+        $createPropertyMetadataFactory = function() use ($type) {
+            $nicknameMetadata = new PropertyMetadata($type, 'nickname', true, true, false, false, true, false, 'http://example.com/foo', null, ['foo' => 'bar']);
+            $propertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $propertyMetadataFactory->create(DummyTableInheritance::class, 'nickname', /** $option */[])->willReturn($nicknameMetadata)->shouldBeCalled();
+            $propertyMetadataFactory->create(DummyTableInheritanceChild::class, 'nickname', /** $option */[])->willReturn($nicknameMetadata)->shouldBeCalled();
+
+            return $propertyMetadataFactory->reveal();
+        };
+
+        $factory = new InheritedPropertyMetadataFactory($createResourceNameCollectionFactory(), $createPropertyMetadataFactory());
         $metadata = $factory->create(DummyTableInheritance::class, 'nickname');
 
-        $shouldBe = new PropertyMetadata($type, 'nickname', true, true, false, false, true, false, 'http://example.com/foo', DummyTableInheritanceChild::class, ['foo' => 'bar']);
-        $this->assertEquals($metadata, $shouldBe);
+        $shouldBe = new PropertyMetadata($type, 'nickname', /** $readable */true, /** $writable */true, /** $readableLink */false, /** $writableLink */false, /** $required */true, /** $identifier */false, 'http://example.com/foo', DummyTableInheritanceChild::class, ['foo' => 'bar']);
+        $this->assertEquals($shouldBe, $metadata);
     }
 }

@@ -28,7 +28,7 @@ class PropertyFilterTest extends \PHPUnit_Framework_TestCase
         $context = ['attributes' => ['foo', 'qux']];
 
         $propertyFilter = new PropertyFilter();
-        $propertyFilter->apply($request, true, [], $context);
+        $propertyFilter->apply($request, /** $normalization */true, /** $attributes */[], $context);
 
         $this->assertEquals(['attributes' => ['foo', 'qux', 'foo', 'bar', 'baz']], $context);
     }

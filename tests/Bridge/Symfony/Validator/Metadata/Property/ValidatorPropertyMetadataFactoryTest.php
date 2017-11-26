@@ -37,16 +37,24 @@ class ValidatorPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
 
     public function testCreateWithPropertyWithRequiredConstraints()
     {
-        $propertyMetadata = new PropertyMetadata(null, 'A dummy', true, true, null, null, null, false);
+        $propertyMetadata = new PropertyMetadata(/** $type */null, /** $description */'A dummy', /** $readable */true, /** $writable */true, /** $readableLink */null, /** $writeableLink */null, /** $required */null, /** $identifier */false);
         $expectedPropertyMetadata = $propertyMetadata->withRequired(true);
 
-        $decoratedPropertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $decoratedPropertyMetadataFactory->create(DummyValidatedEntity::class, 'dummy', [])->willReturn($propertyMetadata)->shouldBeCalled();
+        $createDecoratedPropertyMetadataFactory = function() use ($propertyMetadata) {
+            $decoratedPropertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $decoratedPropertyMetadataFactory->create(DummyValidatedEntity::class, 'dummy', [])->willReturn($propertyMetadata)->shouldBeCalled();
 
-        $validatorMetadataFactory = $this->prophesize(MetadataFactoryInterface::class);
-        $validatorMetadataFactory->getMetadataFor(DummyValidatedEntity::class)->willReturn($this->validatorClassMetadata)->shouldBeCalled();
+            return $decoratedPropertyMetadataFactory->reveal();
+        };
 
-        $validatorPropertyMetadataFactory = new ValidatorPropertyMetadataFactory($validatorMetadataFactory->reveal(), $decoratedPropertyMetadataFactory->reveal());
+        $createValidatorMetadataFactory = function() {
+            $validatorMetadataFactory = $this->prophesize(MetadataFactoryInterface::class);
+            $validatorMetadataFactory->getMetadataFor(DummyValidatedEntity::class)->willReturn($this->validatorClassMetadata)->shouldBeCalled();
+
+            return $validatorMetadataFactory->reveal();
+        };
+
+        $validatorPropertyMetadataFactory = new ValidatorPropertyMetadataFactory($createValidatorMetadataFactory(), $createDecoratedPropertyMetadataFactory());
         $resultedPropertyMetadata = $validatorPropertyMetadataFactory->create(DummyValidatedEntity::class, 'dummy');
 
         $this->assertInstanceOf(PropertyMetadata::class, $resultedPropertyMetadata);

@@ -32,10 +32,10 @@ class ExtractorResourceNameCollectionFactoryTest extends \PHPUnit_Framework_Test
         $configPath = __DIR__.'/../../../Fixtures/FileConfigurations/resources.xml';
         $factory = new ExtractorResourceNameCollectionFactory(new XmlExtractor([$configPath]));
 
-        $this->assertEquals($factory->create(), new ResourceNameCollection([
+        $this->assertEquals(new ResourceNameCollection([
             Dummy::class,
             FileConfigDummy::class,
-        ]));
+        ]), $factory->create());
     }
 
     /**

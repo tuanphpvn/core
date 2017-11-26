@@ -33,18 +33,22 @@ class DenyAccessListenerTest extends \PHPUnit_Framework_TestCase
 {
     public function testNoResourceClass()
     {
-        $request = new Request();
+        $createEvent = function() {
+            $request = new Request();
 
-        $eventProphecy = $this->prophesize(GetResponseEvent::class);
-        $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
-        $event = $eventProphecy->reveal();
+            $eventProphecy = $this->prophesize(GetResponseEvent::class);
+            $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
+            return $eventProphecy->reveal();
+        };
 
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create()->shouldNotBeCalled();
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+        $createResourceMetadataFactory = function() {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create()->shouldNotBeCalled();
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $listener = new DenyAccessListener($resourceMetadataFactory);
-        $listener->onKernelRequest($event);
+        $listener = new DenyAccessListener($createResourceMetadataFactory());
+        $listener->onKernelRequest($createEvent());
     }
 
     public function testNoIsGrantedAttribute()

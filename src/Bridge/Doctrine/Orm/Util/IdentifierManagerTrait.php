@@ -45,45 +45,55 @@ trait IdentifierManagerTrait
         $isOrm = interface_exists(EntityManagerInterface::class) && $manager instanceof EntityManagerInterface;
         $platform = $isOrm ? $manager->getConnection()->getDatabasePlatform() : null;
 
-        if (count($doctrineIdentifierFields) > 1) {
-            $identifiersMap = [];
+        $getIdentifierMap = function() use ($doctrineIdentifierFields, $id) {
+            $identifiersMap = null;
 
-            // first transform identifiers to a proper key/value array
-            foreach (explode(';', $id) as $identifier) {
-                if (!$identifier) {
+            if (count($doctrineIdentifierFields) > 1) {
+                $identifiersMap = [];
+
+                // first transform identifiers to a proper key/value array
+                foreach (explode(';', $id) as $identifier) {
+                    if (!$identifier) {
+                        continue;
+                    }
+
+                    $identifierPair = explode('=', $identifier);
+                    $identifiersMap[$identifierPair[0]] = $identifierPair[1];
+                }
+            }
+
+            return $identifiersMap;
+        };
+        $identifiersMap = $getIdentifierMap();
+
+        $getIdentifiers = function() use($resourceClass, $identifierValues, $doctrineClassMetadata, $platform, $identifiersMap, $id, $isOrm) {
+            $identifiers = [];
+            $i = 0;
+
+            foreach ($this->propertyNameCollectionFactory->create($resourceClass) as $propertyName) {
+                $propertyMetadata = $this->propertyMetadataFactory->create($resourceClass, $propertyName);
+
+                if (!$propertyMetadata->isIdentifier()) {
                     continue;
                 }
 
-                $identifierPair = explode('=', $identifier);
-                $identifiersMap[$identifierPair[0]] = $identifierPair[1];
-            }
-        }
+                $identifier = !isset($identifiersMap) ? $identifierValues[$i] ?? null : $identifiersMap[$propertyName] ?? null;
+                if (null === $identifier) {
+                    throw new PropertyNotFoundException(sprintf('Invalid identifier "%s", "%s" has not been found.', $id, $propertyName));
+                }
 
-        $identifiers = [];
-        $i = 0;
+                $doctrineTypeName = $doctrineClassMetadata->getTypeOfField($propertyName);
 
-        foreach ($this->propertyNameCollectionFactory->create($resourceClass) as $propertyName) {
-            $propertyMetadata = $this->propertyMetadataFactory->create($resourceClass, $propertyName);
+                if ($isOrm && null !== $doctrineTypeName && DBALType::hasType($doctrineTypeName)) {
+                    $identifier = DBALType::getType($doctrineTypeName)->convertToPHPValue($identifier, $platform);
+                }
 
-            if (!$propertyMetadata->isIdentifier()) {
-                continue;
-            }
-
-            $identifier = !isset($identifiersMap) ? $identifierValues[$i] ?? null : $identifiersMap[$propertyName] ?? null;
-            if (null === $identifier) {
-                throw new PropertyNotFoundException(sprintf('Invalid identifier "%s", "%s" has not been found.', $id, $propertyName));
+                $identifiers[$propertyName] = $identifier;
+                ++$i;
             }
 
-            $doctrineTypeName = $doctrineClassMetadata->getTypeOfField($propertyName);
-
-            if ($isOrm && null !== $doctrineTypeName && DBALType::hasType($doctrineTypeName)) {
-                $identifier = DBALType::getType($doctrineTypeName)->convertToPHPValue($identifier, $platform);
-            }
-
-            $identifiers[$propertyName] = $identifier;
-            ++$i;
-        }
-
-        return $identifiers;
+            return $identifiers;
+        };
+        return $getIdentifiers();
     }
 }

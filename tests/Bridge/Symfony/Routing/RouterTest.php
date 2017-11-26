@@ -28,11 +28,15 @@ class RouterTest extends \PHPUnit_Framework_TestCase
     {
         $context = new RequestContext();
 
-        $mockedRouter = $this->prophesize('Symfony\Component\Routing\RouterInterface');
-        $mockedRouter->setContext($context)->shouldBeCalled();
-        $mockedRouter->getContext()->willReturn($context)->shouldBeCalled();
+        $createRouter = function() use ($context) {
+            $mockedRouter = $this->prophesize('Symfony\Component\Routing\RouterInterface');
+            $mockedRouter->setContext($context)->shouldBeCalled();
+            $mockedRouter->getContext()->willReturn($context)->shouldBeCalled();
 
-        $router = new Router($mockedRouter->reveal());
+            return $mockedRouter->reveal();
+        };
+
+        $router = new Router($createRouter());
         $router->setContext($context);
         $this->assertSame($context, $router->getContext());
     }

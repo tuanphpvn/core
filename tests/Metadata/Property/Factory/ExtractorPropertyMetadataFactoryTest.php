@@ -37,7 +37,7 @@ class ExtractorPropertyMetadataFactoryTest extends FileConfigurationMetadataFact
         $configPath = __DIR__.'/../../../Fixtures/FileConfigurations/resources.xml';
 
         $propertyMetadataFactory = new ExtractorPropertyMetadataFactory(new XmlExtractor([$configPath]));
-        $propertyMetadata = $propertyMetadataFactory->create(FileConfigDummy::class, 'foo');
+        $propertyMetadata = $propertyMetadataFactory->create(/** $resourceClass */FileConfigDummy::class, /** $property */'foo');
 
         $this->assertInstanceOf(PropertyMetadata::class, $propertyMetadata);
         $this->assertEquals($expectedPropertyMetadata, $propertyMetadata);

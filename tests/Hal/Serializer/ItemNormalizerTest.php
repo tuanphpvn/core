@@ -36,17 +36,20 @@ class ItemNormalizerTest extends \PHPUnit_Framework_TestCase
      */
     public function testDonTSupportDenormalization()
     {
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
-        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+        $createNormalizer = function() {
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+            $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
 
-        $normalizer = new ItemNormalizer(
-            $propertyNameCollectionFactoryProphecy->reveal(),
-            $propertyMetadataFactoryProphecy->reveal(),
-            $iriConverterProphecy->reveal(),
-            $resourceClassResolverProphecy->reveal()
-        );
+            return new ItemNormalizer(
+                $propertyNameCollectionFactoryProphecy->reveal(),
+                $propertyMetadataFactoryProphecy->reveal(),
+                $iriConverterProphecy->reveal(),
+                $resourceClassResolverProphecy->reveal()
+            );
+        };
+        $normalizer = $createNormalizer();
 
         $this->assertFalse($normalizer->supportsDenormalization('foo', ItemNormalizer::FORMAT));
         $normalizer->denormalize(['foo'], 'Foo');

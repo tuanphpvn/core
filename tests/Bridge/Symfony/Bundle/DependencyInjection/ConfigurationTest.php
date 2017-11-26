@@ -156,6 +156,7 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
         ]);
 
         $this->assertTrue(isset($config['default_operation_path_resolver']));
+        $this->assertSame('api_platform.operation_path_resolver.dash', $config['default_operation_path_resolver']);
     }
 
     public function invalidHttpStatusCodeProvider()

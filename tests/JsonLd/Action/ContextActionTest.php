@@ -27,22 +27,28 @@ class ContextActionTest extends \PHPUnit_Framework_TestCase
 {
     public function testContextActionWithEntrypoint()
     {
-        $contextBuilderProphecy = $this->prophesize(ContextBuilderInterface::class);
-        $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $contextBuilderProphecy->getEntrypointContext()->willReturn(['/entrypoints']);
-        $contextAction = new ContextAction($contextBuilderProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
+        $createContextAction = function() {
+            $contextBuilderProphecy = $this->prophesize(ContextBuilderInterface::class);
+            $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $contextBuilderProphecy->getEntrypointContext()->willReturn(['/entrypoints']);
+            return new ContextAction($contextBuilderProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
+        };
+        $contextAction = $createContextAction();
 
         $this->assertEquals(['@context' => ['/entrypoints']], $contextAction('Entrypoint'));
     }
 
     public function testContextActionWithContexts()
     {
-        $contextBuilderProphecy = $this->prophesize(ContextBuilderInterface::class);
-        $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $contextBuilderProphecy->getBaseContext()->willReturn(['/contexts']);
-        $contextAction = new ContextAction($contextBuilderProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
+        $createAction = function() {
+            $contextBuilderProphecy = $this->prophesize(ContextBuilderInterface::class);
+            $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $contextBuilderProphecy->getBaseContext()->willReturn(['/contexts']);
+            return new ContextAction($contextBuilderProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactoryProphecy->reveal());
+        };
+        $contextAction = $createAction();
 
         $this->assertEquals(['@context' => ['/contexts']], $contextAction('Error'));
     }

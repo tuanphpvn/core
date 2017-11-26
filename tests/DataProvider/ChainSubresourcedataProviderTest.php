@@ -31,16 +31,29 @@ class ChainSubresourcedataProviderTest extends \PHPUnit_Framework_TestCase
         $dummy2->setName('Parks');
 
         $context = ['identifiers' => ['id' => Dummy::class], 'property' => 'relatedDummies'];
-        $firstDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
-        $firstDataProvider->getSubresource(Dummy::class, ['id' => 1], $context, 'get')->willReturn([$dummy, $dummy2])->willThrow(ResourceClassNotSupportedException::class);
 
-        $secondDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
-        $secondDataProvider->getSubresource(Dummy::class, ['id' => 1], $context, 'get')->willReturn([$dummy, $dummy2]);
+        $createFirstDataProvider = function() use ($context, $dummy, $dummy2) {
+            $firstDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
+            $firstDataProvider->getSubresource(Dummy::class, ['id' => 1], $context, 'get')->willReturn([$dummy, $dummy2])->willThrow(ResourceClassNotSupportedException::class);
 
-        $thirdDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
-        $thirdDataProvider->getSubresource(Dummy::class, ['id' => 1], $context, 'get')->willReturn([$dummy]);
+            return $firstDataProvider->reveal();
+        };
 
-        $chainSubresourceDataProvider = new ChainSubresourceDataProvider([$firstDataProvider->reveal(), $secondDataProvider->reveal(), $thirdDataProvider->reveal()]);
+        $createSecondDataProvider = function() use ($context, $dummy, $dummy2) {
+            $secondDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
+            $secondDataProvider->getSubresource(Dummy::class, ['id' => 1], $context, 'get')->willReturn([$dummy, $dummy2]);
+
+            return $secondDataProvider->reveal();
+        };
+
+        $createThirdDataProvider = function() use ($context, $dummy) {
+            $thirdDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
+            $thirdDataProvider->getSubresource(Dummy::class, ['id' => 1], $context, 'get')->willReturn([$dummy]);
+
+            return $thirdDataProvider->reveal();
+        };
+
+        $chainSubresourceDataProvider = new ChainSubresourceDataProvider([$createFirstDataProvider(), $createSecondDataProvider(), $createThirdDataProvider()]);
 
         $this->assertEquals([$dummy, $dummy2], $chainSubresourceDataProvider->getSubresource(Dummy::class, ['id' => 1], $context, 'get'));
     }

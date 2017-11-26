@@ -32,11 +32,15 @@ class EntrypointNormalizerTest extends \PHPUnit_Framework_TestCase
         $collection = new ResourceNameCollection();
         $entrypoint = new Entrypoint($collection);
 
-        $factoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
-        $urlGeneratorProphecy = $this->prophesize(UrlGeneratorInterface::class);
+        $createNormalizer = function() use ($collection, $entrypoint) {
 
-        $normalizer = new EntrypointNormalizer($factoryProphecy->reveal(), $iriConverterProphecy->reveal(), $urlGeneratorProphecy->reveal());
+            $factoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+            $urlGeneratorProphecy = $this->prophesize(UrlGeneratorInterface::class);
+
+            return new EntrypointNormalizer($factoryProphecy->reveal(), $iriConverterProphecy->reveal(), $urlGeneratorProphecy->reveal());
+        };
+        $normalizer = $createNormalizer();
 
         $this->assertTrue($normalizer->supportsNormalization($entrypoint, EntrypointNormalizer::FORMAT));
         $this->assertFalse($normalizer->supportsNormalization($entrypoint, 'json'));

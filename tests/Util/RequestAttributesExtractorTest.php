@@ -23,7 +23,7 @@ class RequestAttributesExtractorTest extends \PHPUnit_Framework_TestCase
 {
     public function testExtractCollectionAttributes()
     {
-        $request = new Request([], [], ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post']);
+        $request = new Request(/** $query */[], /** $request */[], /** $attributes */['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'post']);
 
         $this->assertEquals(
             ['resource_class' => 'Foo', 'collection_operation_name' => 'post', 'receive' => true],

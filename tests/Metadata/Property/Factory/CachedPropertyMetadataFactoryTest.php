@@ -28,17 +28,22 @@ class CachedPropertyMetadataFactoryTest extends \PHPUnit_Framework_TestCase
 {
     public function testCreateWithItemHit()
     {
-        $cacheItem = $this->prophesize(CacheItemInterface::class);
-        $cacheItem->isHit()->willReturn(true)->shouldBeCalled();
-        $cacheItem->get()->willReturn(new PropertyMetadata(null, 'A dummy', true, true, null, null, false, false))->shouldBeCalled();
+        $createCacheItemPool = function() {
+            $cacheItem = $this->prophesize(CacheItemInterface::class);
+            $cacheItem->isHit()->willReturn(true)->shouldBeCalled();
+            $cacheItem->get()->willReturn(new PropertyMetadata(null, 'A dummy', true, true, null, null, false, false))->shouldBeCalled();
 
-        $cacheItemPool = $this->prophesize(CacheItemPoolInterface::class);
-        $cacheItemPool->getItem($this->generateCacheKey())->willReturn($cacheItem->reveal())->shouldBeCalled();
+            $cacheItemPool = $this->prophesize(CacheItemPoolInterface::class);
+            $cacheItemPool->getItem($this->generateCacheKey())->willReturn($cacheItem->reveal())->shouldBeCalled();
+
+            return $cacheItemPool->reveal();
+        };
+        $cacheItemPool = $createCacheItemPool();
 
         $decoratedPropertyMetadataFactory = $this->prophesize(PropertyMetadataFactoryInterface::class);
 
-        $cachedPropertyMetadataFactory = new CachedPropertyMetadataFactory($cacheItemPool->reveal(), $decoratedPropertyMetadataFactory->reveal());
-        $resultedPropertyMetadata = $cachedPropertyMetadataFactory->create(Dummy::class, 'dummy');
+        $cachedPropertyMetadataFactory = new CachedPropertyMetadataFactory($cacheItemPool, $decoratedPropertyMetadataFactory->reveal());
+        $resultedPropertyMetadata = $cachedPropertyMetadataFactory->create(/** $resourceClass */Dummy::class, /** $property */'dummy');
 
         $this->assertInstanceOf(PropertyMetadata::class, $resultedPropertyMetadata);
         $expectedResult = new PropertyMetadata(null, 'A dummy', true, true, null, null, false, false);

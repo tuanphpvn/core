@@ -30,18 +30,23 @@ class CollectionNormalizerTest extends \PHPUnit_Framework_TestCase
 {
     public function testSupportsNormalize()
     {
-        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
-        $iriConvert = $this->prophesize(IriConverterInterface::class);
-        $contextBuilder = $this->prophesize(ContextBuilderInterface::class);
-        $contextBuilder->getResourceContextUri('Foo')->willReturn('/contexts/Foo');
-        $iriConvert->getIriFromResourceClass('Foo')->willReturn('/foos');
+        $createNormalizer = function() {
+            $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+            $iriConvert = $this->prophesize(IriConverterInterface::class);
+            $contextBuilder = $this->prophesize(ContextBuilderInterface::class);
+            $contextBuilder->getResourceContextUri('Foo')->willReturn('/contexts/Foo');
+            $iriConvert->getIriFromResourceClass('Foo')->willReturn('/foos');
 
-        $normalizer = new CollectionNormalizer($contextBuilder->reveal(), $resourceClassResolverProphecy->reveal(), $iriConvert->reveal());
+            $normalizer = new CollectionNormalizer($contextBuilder->reveal(), $resourceClassResolverProphecy->reveal(), $iriConvert->reveal());
 
-        $this->assertTrue($normalizer->supportsNormalization([], CollectionNormalizer::FORMAT));
-        $this->assertTrue($normalizer->supportsNormalization(new \ArrayObject(), CollectionNormalizer::FORMAT));
-        $this->assertFalse($normalizer->supportsNormalization([], 'xml'));
-        $this->assertFalse($normalizer->supportsNormalization(new \ArrayObject(), 'xml'));
+            return $normalizer ;
+        };
+        $normalizer = $createNormalizer();
+
+        $this->assertTrue($normalizer->supportsNormalization(/** $data */[], CollectionNormalizer::FORMAT));
+        $this->assertTrue($normalizer->supportsNormalization(/** $data */new \ArrayObject(), CollectionNormalizer::FORMAT));
+        $this->assertFalse($normalizer->supportsNormalization(/** $data */[], 'xml'));
+        $this->assertFalse($normalizer->supportsNormalization(/** $data */new \ArrayObject(), 'xml'));
     }
 
     public function testNormalizeApiSubLevel()

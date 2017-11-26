@@ -30,14 +30,16 @@ class AddFormatListenerTest extends \PHPUnit_Framework_TestCase
     {
         $request = new Request();
 
-        $eventProphecy = $this->prophesize(GetResponseEvent::class);
-        $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
-        $event = $eventProphecy->reveal();
+        $createEvent = function() use ($request) {
+            $eventProphecy = $this->prophesize(GetResponseEvent::class);
+            $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
+            return $eventProphecy->reveal();
+        };
 
         $listener = new AddFormatListener(new Negotiator(), ['jsonld' => 'application/ld+json']);
-        $listener->onKernelRequest($event);
+        $listener->onKernelRequest($createEvent());
 
-        $this->assertNull($request->getFormat('application/ld+json'));
+        $this->assertNull($request->getFormat(/** $mimeType */'application/ld+json'));
     }
 
     /**

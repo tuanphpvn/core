@@ -26,17 +26,21 @@ class AddHeadersListenerTest extends \PHPUnit_Framework_TestCase
 {
     public function testDoNotSetHeaderWhenMethodNotCacheable()
     {
-        $request = new Request([], [], ['_api_resource_class' => Dummy::class, '_api_item_operation_name' => 'get']);
-        $request->setMethod('PUT');
-
         $response = new Response();
 
-        $event = $this->prophesize(FilterResponseEvent::class);
-        $event->getRequest()->willReturn($request)->shouldBeCalled();
-        $event->getResponse()->willReturn($response)->shouldNotBeCalled();
+        $createEvent = function() use ($response) {
+            $request = new Request(/** $query */[], /** $request */[], /** $attributes */['_api_resource_class' => Dummy::class, '_api_item_operation_name' => 'get']);
+            $request->setMethod('PUT');
+
+            $event = $this->prophesize(FilterResponseEvent::class);
+            $event->getRequest()->willReturn($request)->shouldBeCalled();
+            $event->getResponse()->willReturn($response)->shouldNotBeCalled();
+
+            return $event->reveal();
+        };
 
         $listener = new AddHeadersListener(true);
-        $listener->onKernelResponse($event->reveal());
+        $listener->onKernelResponse($createEvent());
 
         $this->assertNull($response->getEtag());
     }

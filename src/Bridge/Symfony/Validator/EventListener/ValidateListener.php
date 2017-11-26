@@ -48,16 +48,20 @@ final class ValidateListener
      */
     public function onKernelView(GetResponseForControllerResultEvent $event)
     {
-        $request = $event->getRequest();
-        if (
-            $request->isMethodSafe(false)
+        $isNotHandle = function() use ($event) {
+            $request = $event->getRequest();
+
+            return $request->isMethodSafe(false)
             || $request->isMethod(Request::METHOD_DELETE)
             || !($attributes = RequestAttributesExtractor::extractAttributes($request))
-            || !$attributes['receive']
-        ) {
+            || !$attributes['receive'];
+        };
+        if ($isNotHandle()) {
             return;
         }
 
+        $request = $event->getRequest();
+        $attributes = RequestAttributesExtractor::extractAttributes($request);
         $data = $event->getControllerResult();
         $resourceMetadata = $this->resourceMetadataFactory->create($attributes['resource_class']);
 
@@ -84,7 +88,7 @@ final class ValidateListener
             $validationGroups = call_user_func_array($validationGroups, [$data]);
         }
 
-        $violations = $this->validator->validate($data, null, (array) $validationGroups);
+        $violations = $this->validator->validate($data, /** $constraints */null, (array) $validationGroups);
         if (0 !== count($violations)) {
             throw new ValidationException($violations);
         }

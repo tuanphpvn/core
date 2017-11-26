@@ -32,13 +32,21 @@ class SubresourceOperationFactoryTest extends \PHPUnit_Framework_TestCase
 {
     public function testCreate()
     {
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummyEntity'));
-        $resourceMetadataFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('dummyEntity'));
+        $createResourceMetadataFactory = function() {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummyEntity'));
+            $resourceMetadataFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new ResourceMetadata('dummyEntity'));
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['foo', 'subresource', 'subcollection']));
-        $propertyNameCollectionFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['bar', 'anotherSubresource']));
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
+
+        $createPropertyNameCollectionFactory = function() {
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            $propertyNameCollectionFactoryProphecy->create(DummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['foo', 'subresource', 'subcollection']));
+            $propertyNameCollectionFactoryProphecy->create(RelatedDummyEntity::class)->shouldBeCalled()->willReturn(new PropertyNameCollection(['bar', 'anotherSubresource']));
+
+            return $propertyNameCollectionFactoryProphecy->reveal();
+        };
 
         $subresourceMetadata = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class));
         $subresourceMetadataCollection = (new PropertyMetadata())->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class, true));
@@ -57,7 +65,7 @@ class SubresourceOperationFactoryTest extends \PHPUnit_Framework_TestCase
         $pathSegmentNameGeneratorProphecy->getSegmentName('dummyEntity', true)->shouldBeCalled()->willReturn('dummy_entities');
         $pathSegmentNameGeneratorProphecy->getSegmentName('anotherSubresource', false)->shouldBeCalled()->willReturn('another_subresource');
 
-        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactoryProphecy->reveal(), $propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $pathSegmentNameGeneratorProphecy->reveal());
+        $subresourceOperationFactory = new SubresourceOperationFactory($createResourceMetadataFactory(), $createPropertyNameCollectionFactory(), $propertyMetadataFactoryProphecy->reveal(), $pathSegmentNameGeneratorProphecy->reveal());
 
         $this->assertEquals([
             'api_dummy_entities_subresource_get_subresource' => [

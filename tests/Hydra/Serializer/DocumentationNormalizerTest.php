@@ -39,44 +39,68 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
         $title = 'Test Api';
         $desc = 'test ApiGerard';
         $version = '0.0.0';
-        $documentation = new Documentation(new ResourceNameCollection(['dummy' => 'dummy']), $title, $desc, $version, []);
+        $documentation = new Documentation(new ResourceNameCollection(['dummy' => 'dummy']), $title, $desc, $version, /** $formats */[]);
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create('dummy', [])->shouldBeCalled()->willReturn(new PropertyNameCollection(['name', 'description', 'relatedDummy']));
+        $createPropertyNameCollectionFactory = function() {
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            $propertyNameCollectionFactoryProphecy->create('dummy', [])->shouldBeCalled()->willReturn(new PropertyNameCollection(['name', 'description', 'relatedDummy']));
 
-        $dummyMetadata = new ResourceMetadata('dummy', 'dummy', '#dummy', ['get' => ['method' => 'GET', 'hydra_context' => ['hydra:foo' => 'bar', 'hydra:title' => 'foobar']], 'put' => ['method' => 'PUT']], ['get' => ['method' => 'GET'], 'post' => ['method' => 'POST']], []);
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create('dummy')->shouldBeCalled()->willReturn($dummyMetadata);
-        $resourceMetadataFactoryProphecy->create('relatedDummy')->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummy'));
+            return $propertyNameCollectionFactoryProphecy->reveal();
+        };
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create('dummy', 'name')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'name', true, true, true, true, false, false, null, null, []));
-        $propertyMetadataFactoryProphecy->create('dummy', 'description')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'description', true, true, true, true, false, false, null, null, ['jsonld_context' => ['@type' => '@id']]));
-        $subresourceMetadata = new SubresourceMetadata('relatedDummy', false);
-        $propertyMetadataFactoryProphecy->create('dummy', 'relatedDummy')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_OBJECT, false, 'dummy', true, null, new Type(Type::BUILTIN_TYPE_OBJECT, false, 'relatedDummy')), 'This is a name.', true, true, true, true, false, false, null, null, [], $subresourceMetadata));
+        $createResourceMetadataFactory = function() {
+            $dummyMetadata = new ResourceMetadata('dummy', 'dummy', '#dummy', ['get' => ['method' => 'GET', 'hydra_context' => ['hydra:foo' => 'bar', 'hydra:title' => 'foobar']], 'put' => ['method' => 'PUT']], ['get' => ['method' => 'GET'], 'post' => ['method' => 'POST']], []);
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create('dummy')->shouldBeCalled()->willReturn($dummyMetadata);
+            $resourceMetadataFactoryProphecy->create('relatedDummy')->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummy'));
 
-        $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
-        $resourceClassResolverProphecy->isResourceClass(Argument::type('string'))->willReturn(true);
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $operationMethodResolverProphecy = $this->prophesize(OperationMethodResolverInterface::class);
-        $operationMethodResolverProphecy->getItemOperationMethod('dummy', 'get')->shouldBeCalled()->willReturn('GET');
-        $operationMethodResolverProphecy->getItemOperationMethod('dummy', 'put')->shouldBeCalled()->willReturn('PUT');
-        $operationMethodResolverProphecy->getCollectionOperationMethod('dummy', 'get')->shouldBeCalled()->willReturn('GET');
-        $operationMethodResolverProphecy->getCollectionOperationMethod('dummy', 'post')->shouldBeCalled()->willReturn('POST');
+        $createPropertyMetadataFactory = function() {
+            $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $propertyMetadataFactoryProphecy->create('dummy', 'name')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'name', true, true, true, true, false, false, null, null, []));
+            $propertyMetadataFactoryProphecy->create('dummy', 'description')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), 'description', true, true, true, true, false, false, null, null, ['jsonld_context' => ['@type' => '@id']]));
+            $subresourceMetadata = new SubresourceMetadata('relatedDummy', false);
+            $propertyMetadataFactoryProphecy->create('dummy', 'relatedDummy')->shouldBeCalled()->willReturn(new PropertyMetadata(new Type(Type::BUILTIN_TYPE_OBJECT, false, 'dummy', true, null, new Type(Type::BUILTIN_TYPE_OBJECT, false, 'relatedDummy')), 'This is a name.', true, true, true, true, false, false, null, null, [], $subresourceMetadata));
 
-        $urlGenerator = $this->prophesize(UrlGeneratorInterface::class);
-        $urlGenerator->generate('api_entrypoint')->willReturn('/')->shouldBeCalled(1);
-        $urlGenerator->generate('api_doc', ['_format' => 'jsonld'])->willReturn('/doc')->shouldBeCalled(1);
+            return $propertyMetadataFactoryProphecy->reveal();
+        };
 
-        $urlGenerator->generate('api_doc', ['_format' => 'jsonld'], 0)->willReturn('/doc')->shouldBeCalled(1);
+        $createResourceClassResolver = function() {
+            $resourceClassResolverProphecy = $this->prophesize(ResourceClassResolverInterface::class);
+            $resourceClassResolverProphecy->isResourceClass(Argument::type('string'))->willReturn(true);
+
+            return $resourceClassResolverProphecy->reveal();
+        };
+
+        $createOperationMethodResolver = function() {
+            $operationMethodResolverProphecy = $this->prophesize(OperationMethodResolverInterface::class);
+            $operationMethodResolverProphecy->getItemOperationMethod('dummy', 'get')->shouldBeCalled()->willReturn('GET');
+            $operationMethodResolverProphecy->getItemOperationMethod('dummy', 'put')->shouldBeCalled()->willReturn('PUT');
+            $operationMethodResolverProphecy->getCollectionOperationMethod('dummy', 'get')->shouldBeCalled()->willReturn('GET');
+            $operationMethodResolverProphecy->getCollectionOperationMethod('dummy', 'post')->shouldBeCalled()->willReturn('POST');
+
+            return $operationMethodResolverProphecy->reveal();
+        };
+
+        $createUrlGenerator = function() {
+            $urlGenerator = $this->prophesize(UrlGeneratorInterface::class);
+            $urlGenerator->generate('api_entrypoint')->willReturn('/')->shouldBeCalled(1);
+            $urlGenerator->generate('api_doc', ['_format' => 'jsonld'])->willReturn('/doc')->shouldBeCalled(1);
+
+            $urlGenerator->generate('api_doc', ['_format' => 'jsonld'], 0)->willReturn('/doc')->shouldBeCalled(1);
+
+            return $urlGenerator->reveal();
+        };
 
         $apiDocumentationBuilder = new DocumentationNormalizer(
-            $resourceMetadataFactoryProphecy->reveal(),
-            $propertyNameCollectionFactoryProphecy->reveal(),
-            $propertyMetadataFactoryProphecy->reveal(),
-            $resourceClassResolverProphecy->reveal(),
-            $operationMethodResolverProphecy->reveal(),
-            $urlGenerator->reveal());
+            $createResourceMetadataFactory(),
+            $createPropertyNameCollectionFactory(),
+            $createPropertyMetadataFactory(),
+            $createResourceClassResolver(),
+            $createOperationMethodResolver(),
+            $createUrlGenerator());
 
         $expected = [
             '@context' => [

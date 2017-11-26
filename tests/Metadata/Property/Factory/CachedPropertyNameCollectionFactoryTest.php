@@ -28,16 +28,21 @@ class CachedPropertyNameCollectionFactoryTest extends \PHPUnit_Framework_TestCas
 {
     public function testCreateWithItemHit()
     {
-        $cacheItem = $this->prophesize(CacheItemInterface::class);
-        $cacheItem->isHit()->willReturn(true)->shouldBeCalled();
-        $cacheItem->get()->willReturn(new PropertyNameCollection(['id', 'name', 'description', 'dummy']))->shouldBeCalled();
+        $createCacheItemPool = function() {
+            $cacheItem = $this->prophesize(CacheItemInterface::class);
+            $cacheItem->isHit()->willReturn(true)->shouldBeCalled();
+            $cacheItem->get()->willReturn(new PropertyNameCollection(['id', 'name', 'description', 'dummy']))->shouldBeCalled();
 
-        $cacheItemPool = $this->prophesize(CacheItemPoolInterface::class);
-        $cacheItemPool->getItem($this->generateCacheKey())->willReturn($cacheItem->reveal())->shouldBeCalled();
+            $cacheItemPool = $this->prophesize(CacheItemPoolInterface::class);
+            $cacheItemPool->getItem($this->generateCacheKey())->willReturn($cacheItem->reveal())->shouldBeCalled();
+
+            return $cacheItemPool->reveal();
+        };
+        $cacheItemPool = $createCacheItemPool();
 
         $decoratedPropertyNameCollectionFactory = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
 
-        $cachedPropertyNameCollectionFactory = new CachedPropertyNameCollectionFactory($cacheItemPool->reveal(), $decoratedPropertyNameCollectionFactory->reveal());
+        $cachedPropertyNameCollectionFactory = new CachedPropertyNameCollectionFactory($cacheItemPool, $decoratedPropertyNameCollectionFactory->reveal());
         $resultedPropertyNameCollection = $cachedPropertyNameCollectionFactory->create(Dummy::class);
 
         $this->assertInstanceOf(PropertyNameCollection::class, $resultedPropertyNameCollection);

@@ -28,20 +28,28 @@ class AddTagsListenerTest extends \PHPUnit_Framework_TestCase
     public function testDoNotSetHeaderWhenMethodNotCacheable()
     {
         $iriConverterProphecy = $this->prophesize(IriConverterInterface::class);
+        $createResponse = function() {
+            $response = new Response();
+            $response->setPublic();
+            $response->setEtag('foo');
 
-        $request = new Request([], [], ['_resources' => ['/foo', '/bar'], '_api_resource_class' => Dummy::class, '_api_item_operation_name' => 'get']);
-        $request->setMethod('PUT');
+            return $response;
+        };
+        $response = $createResponse();
 
-        $response = new Response();
-        $response->setPublic();
-        $response->setEtag('foo');
+        $createEvent = function() use ($response) {
+            $request = new Request(/** $query */[], /** $request */[], /** $attributes */['_resources' => ['/foo', '/bar'], '_api_resource_class' => Dummy::class, '_api_item_operation_name' => 'get']);
+            $request->setMethod('PUT');
 
-        $event = $this->prophesize(FilterResponseEvent::class);
-        $event->getRequest()->willReturn($request)->shouldBeCalled();
-        $event->getResponse()->willReturn($response)->shouldBeCalled();
+            $event = $this->prophesize(FilterResponseEvent::class);
+            $event->getRequest()->willReturn($request)->shouldBeCalled();
+            $event->getResponse()->willReturn($response)->shouldBeCalled();
+
+            return $event->reveal();
+        };
 
         $listener = new AddTagsListener($iriConverterProphecy->reveal());
-        $listener->onKernelResponse($event->reveal());
+        $listener->onKernelResponse($createEvent());
 
         $this->assertFalse($response->headers->has('Cache-Tags'));
     }

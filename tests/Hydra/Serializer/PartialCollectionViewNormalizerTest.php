@@ -27,9 +27,9 @@ class PartialCollectionViewNormalizerTest extends \PHPUnit_Framework_TestCase
     public function testNormalizeDoesNotChangeSubLevel()
     {
         $decoratedNormalizerProphecy = $this->prophesize(NormalizerInterface::class);
-        $decoratedNormalizerProphecy->normalize(Argument::any(), null, ['jsonld_sub_level' => true])->willReturn(['foo' => 'bar'])->shouldBeCalled();
-
+        $decoratedNormalizerProphecy->normalize(/** $object */Argument::any(), /** $format */null, /** $context */['jsonld_sub_level' => true])->willReturn(['foo' => 'bar'])->shouldBeCalled();
         $normalizer = new PartialCollectionViewNormalizer($decoratedNormalizerProphecy->reveal());
+
         $this->assertEquals(['foo' => 'bar'], $normalizer->normalize(new \stdClass(), null, ['jsonld_sub_level' => true]));
     }
 

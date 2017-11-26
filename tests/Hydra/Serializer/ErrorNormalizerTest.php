@@ -26,7 +26,6 @@ class ErrorNormalizerTest extends \PHPUnit_Framework_TestCase
     public function testSupportNormalization()
     {
         $urlGeneratorProphecy = $this->prophesize(UrlGeneratorInterface::class);
-
         $normalizer = new ErrorNormalizer($urlGeneratorProphecy->reveal());
 
         $this->assertTrue($normalizer->supportsNormalization(new \Exception(), ErrorNormalizer::FORMAT));
@@ -64,7 +63,7 @@ class ErrorNormalizerTest extends \PHPUnit_Framework_TestCase
             $expected['trace'] = $exception->getTrace();
         }
 
-        $this->assertEquals($expected, $normalizer->normalize($exception, null, ['statusCode' => $status]));
+        $this->assertEquals($expected, $normalizer->normalize($exception, /** $format */null, ['statusCode' => $status]));
     }
 
     public function providerStatusCode()

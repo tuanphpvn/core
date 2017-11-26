@@ -25,9 +25,14 @@ class DocumentationActionTest extends \PHPUnit_Framework_TestCase
 {
     public function testDocumentationAction()
     {
-        $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
-        $resourceNameCollectionFactoryProphecy->create()->willReturn(new ResourceNameCollection(['dummies']));
-        $documentation = new DocumentationAction($resourceNameCollectionFactoryProphecy->reveal(), 'My happy hippie api', 'lots of chocolate', '1.0.0', ['formats' => ['jsonld' => 'application/ld+json']]);
-        $this->assertEquals(new Documentation(new ResourceNameCollection(['dummies']), 'My happy hippie api', 'lots of chocolate', '1.0.0', ['formats' => ['jsonld' => 'application/ld+json']]), $documentation());
+        $createResourceNameCollectionFactory = function() {
+            $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+            $resourceNameCollectionFactoryProphecy->create()->willReturn(new ResourceNameCollection(['dummies']));
+
+            return $resourceNameCollectionFactoryProphecy->reveal();
+        };
+
+        $documentation = new DocumentationAction($createResourceNameCollectionFactory(), 'My happy hippie api', 'lots of chocolate', '1.0.0', ['formats' => ['jsonld' => 'application/ld+json']]);
+        $this->assertEquals(new Documentation(new ResourceNameCollection(['dummies']), /** $title */'My happy hippie api', /** $description */'lots of chocolate', /** $versions */'1.0.0', /** $formats */['formats' => ['jsonld' => 'application/ld+json']]), $documentation());
     }
 }

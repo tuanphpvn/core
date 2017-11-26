@@ -26,15 +26,19 @@ class RespondListenerTest extends \PHPUnit_Framework_TestCase
 {
     public function testDoNotHandleResponse()
     {
-        $request = new Request();
-        $request->setRequestFormat('xml');
+        $createEvent = function() {
+            $request = new Request();
+            $request->setRequestFormat('xml');
 
-        $eventProphecy = $this->prophesize(GetResponseForControllerResultEvent::class);
-        $eventProphecy->getControllerResult()->willReturn(new Response())->shouldBeCalled();
-        $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
+            $eventProphecy = $this->prophesize(GetResponseForControllerResultEvent::class);
+            $eventProphecy->getControllerResult()->willReturn(new Response())->shouldBeCalled();
+            $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
+
+            return $eventProphecy->reveal();
+        };
 
         $listener = new RespondListener();
-        $listener->onKernelView($eventProphecy->reveal());
+        $listener->onKernelView($createEvent());
     }
 
     public function testCreate200Response()

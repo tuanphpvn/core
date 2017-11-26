@@ -37,68 +37,81 @@ class ApiPlatformProviderTest extends \PHPUnit_Framework_TestCase
 {
     public function testConstruct()
     {
-        $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
-        $resourceNameCollectionFactory = $resourceNameCollectionFactoryProphecy->reveal();
+        $createResourceNameCollectionFactory = function() {
+            $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+            return $resourceNameCollectionFactoryProphecy->reveal();
+        };
 
-        $documentationNormalizerProphecy = $this->prophesize(NormalizerInterface::class);
-        $documentationNormalizer = $documentationNormalizerProphecy->reveal();
+        $createDocumentationNormalizer = function() {
+            $documentationNormalizerProphecy = $this->prophesize(NormalizerInterface::class);
+            return $documentationNormalizerProphecy->reveal();
+        };
 
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+        $createResourceMetadataFactory = function() {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            return  $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $filterLocatorProphecy = $this->prophesize(ContainerInterface::class);
-        $filterLocator = $filterLocatorProphecy->reveal();
+        $createFilterLocator = function() {
+            $filterLocatorProphecy = $this->prophesize(ContainerInterface::class);
+            return $filterLocatorProphecy->reveal();
+        };
 
-        $operationMethodResolverProphecy = $this->prophesize(OperationMethodResolverInterface::class);
-        $operationMethodResolver = $operationMethodResolverProphecy->reveal();
+        $createOperationMethodResolver = function() {
+            $operationMethodResolverProphecy = $this->prophesize(OperationMethodResolverInterface::class);
+            return $operationMethodResolverProphecy->reveal();
+        };
 
-        $apiPlatformProvider = new ApiPlatformProvider($resourceNameCollectionFactory, $documentationNormalizer, $resourceMetadataFactory, $filterLocator, $operationMethodResolver);
-
+        $apiPlatformProvider = new ApiPlatformProvider($createResourceNameCollectionFactory(), $createDocumentationNormalizer(), $createResourceMetadataFactory(), $createFilterLocator(), $createOperationMethodResolver());
         $this->assertInstanceOf(AnnotationsProviderInterface::class, $apiPlatformProvider);
     }
 
-    public function testGetAnnotations()
+    public function getFilterLocator()
     {
-        $dummySearchFilterProphecy = $this->prophesize(FilterInterface::class);
-        $dummySearchFilterProphecy->getDescription(Dummy::class)->willReturn([
-            'name' => [
-                'property' => 'name',
-                'type' => 'string',
-                'required' => 'false',
-                'strategy' => 'partial',
-            ],
-        ])->shouldBeCalled();
+        $createFilterLocator = function() {
+            $dummySearchFilterProphecy = $this->prophesize(FilterInterface::class);
+            $dummySearchFilterProphecy->getDescription(Dummy::class)->willReturn([
+                'name' => [
+                    'property' => 'name',
+                    'type' => 'string',
+                    'required' => 'false',
+                    'strategy' => 'partial',
+                ],
+            ])->shouldBeCalled();
 
-        $filterLocatorProphecy = $this->prophesize(ContainerInterface::class);
-        $filterLocatorProphecy->has('my_dummy.search')->willReturn(true)->shouldBeCalled();
-        $filterLocatorProphecy->get('my_dummy.search')->willReturn($dummySearchFilterProphecy->reveal())->shouldBeCalled();
+            $filterLocatorProphecy = $this->prophesize(ContainerInterface::class);
+            $filterLocatorProphecy->has('my_dummy.search')->willReturn(true)->shouldBeCalled();
+            $filterLocatorProphecy->get('my_dummy.search')->willReturn($dummySearchFilterProphecy->reveal())->shouldBeCalled();
 
-        $this->extractAnnotations($filterLocatorProphecy->reveal());
-    }
+            return $filterLocatorProphecy->reveal();
+        };
 
-    /**
-     * @group legacy
-     * @expectedDeprecation The ApiPlatform\Core\Api\FilterCollection class is deprecated since version 2.1 and will be removed in 3.0. Provide an implementation of Psr\Container\ContainerInterface instead.
-     */
-    public function testGetAnnotationsWithDeprecatedFilterCollection()
-    {
-        $dummySearchFilterProphecy = $this->prophesize(FilterInterface::class);
-        $dummySearchFilterProphecy->getDescription(Dummy::class)->willReturn([
-            'name' => [
-                'property' => 'name',
-                'type' => 'string',
-                'required' => 'false',
-                'strategy' => 'partial',
-            ],
-        ])->shouldBeCalled();
+        $createDeprecated = function() {
+            $dummySearchFilterProphecy = $this->prophesize(FilterInterface::class);
+            $dummySearchFilterProphecy->getDescription(Dummy::class)->willReturn([
+                'name' => [
+                    'property' => 'name',
+                    'type' => 'string',
+                    'required' => 'false',
+                    'strategy' => 'partial',
+                ],
+            ])->shouldBeCalled();
 
-        $this->extractAnnotations(new FilterCollection(['my_dummy.search' => $dummySearchFilterProphecy->reveal()]));
+            return new FilterCollection(['my_dummy.search' => $dummySearchFilterProphecy->reveal()]);
+        };
+
+        return [['simple' => $createFilterLocator()],
+            ['deprecated' => $createDeprecated(), [
+                    '@expectedDeprecation' => 'The ApiPlatform\Core\Api\FilterCollection class is deprecated since version 2.1 and will be removed in 3.0. Provide an implementation of Psr\Container\ContainerInterface instead.',
+                ]
+            ]
+        ];
     }
 
     /**
      * @group legacy
      * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage The "$filterLocator" argument is expected to be an implementation of the "Psr\Container\ContainerInterface" interface.
+     * @expectedExceptionMessage
      */
     public function testConstructWithInvalidFilterLocator()
     {
@@ -111,59 +124,78 @@ class ApiPlatformProviderTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    private function extractAnnotations($filterLocator)
+    /**
+     *@dataProvider getFilterLocator
+     */
+    public function testGetAnnotations($filterLocator, $arrError = [])
     {
-        $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
-        $resourceNameCollectionFactoryProphecy->create()->willReturn(new ResourceNameCollection([Dummy::class]))->shouldBeCalled();
-        $resourceNameCollectionFactory = $resourceNameCollectionFactoryProphecy->reveal();
+        if(!empty($arrError)) {
+            if(isset($arrError['@expectedDeprecation'])) {
+//                $this->expectException($arrError['@expectedDeprecation']);
+            }
+        }
+        $createResourceNameCollectionFactory = function() {
+            $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+            $resourceNameCollectionFactoryProphecy->create()->willReturn(new ResourceNameCollection([Dummy::class]))->shouldBeCalled();
 
-        $apiDocumentationBuilderProphecy = $this->prophesize(NormalizerInterface::class);
-        $hydraDoc = $this->getHydraDoc();
-        $apiDocumentationBuilderProphecy->normalize(new Documentation(new ResourceNameCollection([Dummy::class])))->willReturn($hydraDoc)->shouldBeCalled();
-        $apiDocumentationBuilder = $apiDocumentationBuilderProphecy->reveal();
+            return $resourceNameCollectionFactoryProphecy->reveal();
+        };
 
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $dummyResourceMetadata = (new ResourceMetadata())
-            ->withShortName('Dummy')
-            ->withItemOperations([
-                'get' => [
-                    'method' => 'GET',
-                ],
-                'put' => [
-                    'method' => 'PUT',
-                ],
-                'delete' => [
-                    'method' => 'DELETE',
-                ],
-            ])
-            ->withCollectionOperations([
-                'get' => [
-                    'filters' => [
-                        'my_dummy.search',
+        $createApiDocumentationNormalizer = function() {
+            $apiDocumentationBuilderProphecy = $this->prophesize(NormalizerInterface::class);
+            $hydraDoc = $this->getHydraDoc();
+            $apiDocumentationBuilderProphecy->normalize(new Documentation(new ResourceNameCollection([Dummy::class])))->willReturn($hydraDoc)->shouldBeCalled();
+
+            return $apiDocumentationBuilderProphecy->reveal();
+        };
+
+        $createResourceMetadataFactory = function() {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $dummyResourceMetadata = (new ResourceMetadata())
+                ->withShortName('Dummy')
+                ->withItemOperations([
+                    'get' => [
+                        'method' => 'GET',
                     ],
-                    'method' => 'GET',
-                ],
-                'post' => [
-                    'method' => 'POST',
-                ],
-            ]);
-        $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn($dummyResourceMetadata)->shouldBeCalled();
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+                    'put' => [
+                        'method' => 'PUT',
+                    ],
+                    'delete' => [
+                        'method' => 'DELETE',
+                    ],
+                ])
+                ->withCollectionOperations([
+                    'get' => [
+                        'filters' => [
+                            'my_dummy.search',
+                        ],
+                        'method' => 'GET',
+                    ],
+                    'post' => [
+                        'method' => 'POST',
+                    ],
+                ]);
+            $resourceMetadataFactoryProphecy->create(Dummy::class)->willReturn($dummyResourceMetadata)->shouldBeCalled();
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
 
-        $operationMethodResolverProphecy = $this->prophesize(OperationMethodResolverInterface::class);
-        $operationMethodResolverProphecy->getCollectionOperationMethod(Dummy::class, 'get')->willReturn('GET')->shouldBeCalled();
-        $operationMethodResolverProphecy->getCollectionOperationMethod(Dummy::class, 'post')->willReturn('POST')->shouldBeCalled();
-        $operationMethodResolverProphecy->getItemOperationMethod(Dummy::class, 'get')->willReturn('GET')->shouldBeCalled();
-        $operationMethodResolverProphecy->getItemOperationMethod(Dummy::class, 'put')->willReturn('PUT')->shouldBeCalled();
-        $operationMethodResolverProphecy->getItemOperationMethod(Dummy::class, 'delete')->willReturn('DELETE')->shouldBeCalled();
-        $operationMethodResolverProphecy->getCollectionOperationRoute(Dummy::class, 'get')->willReturn((new Route('/dummies'))->setMethods(['GET']))->shouldBeCalled();
-        $operationMethodResolverProphecy->getCollectionOperationRoute(Dummy::class, 'post')->willReturn((new Route('/dummies'))->setMethods(['POST']))->shouldBeCalled();
-        $operationMethodResolverProphecy->getItemOperationRoute(Dummy::class, 'get')->willReturn((new Route('/dummies/{id}'))->setMethods(['GET']))->shouldBeCalled();
-        $operationMethodResolverProphecy->getItemOperationRoute(Dummy::class, 'put')->willReturn((new Route('/dummies/{id}'))->setMethods(['PUT']))->shouldBeCalled();
-        $operationMethodResolverProphecy->getItemOperationRoute(Dummy::class, 'delete')->willReturn((new Route('/dummies/{id}'))->setMethods(['DELETE']))->shouldBeCalled();
-        $operationMethodResolver = $operationMethodResolverProphecy->reveal();
+        $createOperationMethodResolver = function() {
+            $operationMethodResolverProphecy = $this->prophesize(OperationMethodResolverInterface::class);
+            $operationMethodResolverProphecy->getCollectionOperationMethod(Dummy::class, 'get')->willReturn('GET')->shouldBeCalled();
+            $operationMethodResolverProphecy->getCollectionOperationMethod(Dummy::class, 'post')->willReturn('POST')->shouldBeCalled();
+            $operationMethodResolverProphecy->getItemOperationMethod(Dummy::class, 'get')->willReturn('GET')->shouldBeCalled();
+            $operationMethodResolverProphecy->getItemOperationMethod(Dummy::class, 'put')->willReturn('PUT')->shouldBeCalled();
+            $operationMethodResolverProphecy->getItemOperationMethod(Dummy::class, 'delete')->willReturn('DELETE')->shouldBeCalled();
+            $operationMethodResolverProphecy->getCollectionOperationRoute(Dummy::class, 'get')->willReturn((new Route('/dummies'))->setMethods(['GET']))->shouldBeCalled();
+            $operationMethodResolverProphecy->getCollectionOperationRoute(Dummy::class, 'post')->willReturn((new Route('/dummies'))->setMethods(['POST']))->shouldBeCalled();
+            $operationMethodResolverProphecy->getItemOperationRoute(Dummy::class, 'get')->willReturn((new Route('/dummies/{id}'))->setMethods(['GET']))->shouldBeCalled();
+            $operationMethodResolverProphecy->getItemOperationRoute(Dummy::class, 'put')->willReturn((new Route('/dummies/{id}'))->setMethods(['PUT']))->shouldBeCalled();
+            $operationMethodResolverProphecy->getItemOperationRoute(Dummy::class, 'delete')->willReturn((new Route('/dummies/{id}'))->setMethods(['DELETE']))->shouldBeCalled();
 
-        $apiPlatformProvider = new ApiPlatformProvider($resourceNameCollectionFactory, $apiDocumentationBuilder, $resourceMetadataFactory, $filterLocator, $operationMethodResolver);
+            return $operationMethodResolverProphecy->reveal();
+        };
+
+        $apiPlatformProvider = new ApiPlatformProvider($createResourceNameCollectionFactory(), $createApiDocumentationNormalizer(), $createResourceMetadataFactory(), $filterLocator, $createOperationMethodResolver());
 
         $actual = $apiPlatformProvider->getAnnotations();
 

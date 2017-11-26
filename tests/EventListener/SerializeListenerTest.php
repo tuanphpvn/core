@@ -29,21 +29,33 @@ class SerializeListenerTest extends \PHPUnit_Framework_TestCase
 {
     public function testDoNotSerializeResponse()
     {
-        $serializerProphecy = $this->prophesize(SerializerInterface::class);
-        $serializerProphecy->serialize()->shouldNotBeCalled();
+        $createSerializer = function() {
+            $serializerProphecy = $this->prophesize(SerializerInterface::class);
+            $serializerProphecy->serialize()->shouldNotBeCalled();
+
+            return $serializerProphecy->reveal();
+        };
 
         $request = new Request();
         $request->setRequestFormat('xml');
 
-        $eventProphecy = $this->prophesize(GetResponseForControllerResultEvent::class);
-        $eventProphecy->getControllerResult()->willReturn(new Response())->shouldBeCalled();
-        $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
+        $createEvent = function() use ($request) {
+            $eventProphecy = $this->prophesize(GetResponseForControllerResultEvent::class);
+            $eventProphecy->getControllerResult()->willReturn(new Response())->shouldBeCalled();
+            $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest()->shouldNotBeCalled();
+            return $eventProphecy->reveal();
+        };
 
-        $listener = new SerializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal());
-        $listener->onKernelView($eventProphecy->reveal());
+        $createSerializerContextBuilder = function() use ($request) {
+            $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+            $serializerContextBuilderProphecy->createFromRequest()->shouldNotBeCalled();
+
+            return $serializerContextBuilderProphecy->reveal();
+        };
+
+        $listener = new SerializeListener($createSerializer(), $createSerializerContextBuilder());
+        $listener->onKernelView($createEvent());
     }
 
     public function testDoNotSerializeWhenApiInfoNotSet()

@@ -31,20 +31,32 @@ class DeserializeListenerTest extends \PHPUnit_Framework_TestCase
 
     public function testDoNotCallWhenRequestMethodIsSafe()
     {
-        $eventProphecy = $this->prophesize(GetResponseEvent::class);
+        $createEvent = function() {
+            $eventProphecy = $this->prophesize(GetResponseEvent::class);
 
-        $request = new Request($_query = [], $_request = [], $_attrs = ['data' => new \stdClass()]);
-        $request->setMethod(Request::METHOD_GET);
-        $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
+            $request = new Request(/** $query */ [], /** $request */ [], /** $attrs */ ['data' => new \stdClass()]);
+            $request->setMethod(Request::METHOD_GET);
+            $eventProphecy->getRequest()->willReturn($request)->shouldBeCalled();
 
-        $serializerProphecy = $this->prophesize(SerializerInterface::class);
-        $serializerProphecy->deserialize()->shouldNotBeCalled();
+            return $eventProphecy->reveal();
+        };
 
-        $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
-        $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), false, Argument::type('array'))->shouldNotBeCalled();
+        $createSerializer = function() {
+            $serializerProphecy = $this->prophesize(SerializerInterface::class);
+            $serializerProphecy->deserialize()->shouldNotBeCalled();
 
-        $listener = new DeserializeListener($serializerProphecy->reveal(), $serializerContextBuilderProphecy->reveal(), self::FORMATS);
-        $listener->onKernelRequest($eventProphecy->reveal());
+            return $serializerProphecy->reveal();
+        };
+
+        $createSerializerContextBuilder = function() {
+            $serializerContextBuilderProphecy = $this->prophesize(SerializerContextBuilderInterface::class);
+            $serializerContextBuilderProphecy->createFromRequest(Argument::type(Request::class), false, Argument::type('array'))->shouldNotBeCalled();
+
+            return $serializerContextBuilderProphecy->reveal();
+        };
+
+        $listener = new DeserializeListener($createSerializer(), $createSerializerContextBuilder(), self::FORMATS);
+        $listener->onKernelRequest($createEvent());
     }
 
     public function testDoNotCallWhenPutAndEmptyRequestContent()

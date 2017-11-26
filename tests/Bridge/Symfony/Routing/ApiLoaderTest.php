@@ -43,57 +43,65 @@ class ApiLoaderTest extends \PHPUnit_Framework_TestCase
 {
     public function testApiLoader()
     {
-        $resourceMetadata = new ResourceMetadata();
-        $resourceMetadata = $resourceMetadata->withShortName('dummy');
-        //default operation based on OperationResourceMetadataFactory
-        $resourceMetadata = $resourceMetadata->withItemOperations([
-            'get' => ['method' => 'GET', 'requirements' => ['id' => '\d+']],
-            'put' => ['method' => 'PUT'],
-            'delete' => ['method' => 'DELETE'],
-        ]);
-        //custom operations
-        $resourceMetadata = $resourceMetadata->withCollectionOperations([
-            'my_op' => ['method' => 'GET', 'controller' => 'some.service.name', 'requirements' => ['_format' => 'a valid format']], //with controller
-            'my_second_op' => ['method' => 'POST'], //without controller, takes the default one
-            'my_path_op' => ['method' => 'GET', 'path' => 'some/custom/path'], //custom path
-        ]);
+        $createResourceMetadata = function() {
+            $resourceMetadata = new ResourceMetadata();
+            $resourceMetadata = $resourceMetadata->withShortName('dummy');
+            //default operation based on OperationResourceMetadataFactory
+            $resourceMetadata = $resourceMetadata->withItemOperations([
+                'get' => ['method' => 'GET', 'requirements' => ['id' => '\d+']],
+                'put' => ['method' => 'PUT'],
+                'delete' => ['method' => 'DELETE'],
+            ]);
+            //custom operations
+            $resourceMetadata = $resourceMetadata->withCollectionOperations([
+                'my_op' => ['method' => 'GET', 'controller' => 'some.service.name', 'requirements' => ['_format' => 'a valid format']], //with controller
+                'my_second_op' => ['method' => 'POST'], //without controller, takes the default one
+                'my_path_op' => ['method' => 'GET', 'path' => 'some/custom/path'], //custom path
+            ]);
 
-        $routeCollection = $this->getApiLoaderWithResourceMetadata($resourceMetadata)->load(null);
+            return $resourceMetadata;
+        };
 
-        $this->assertEquals(
-            $this->getRoute('/dummies/{id}.{_format}', 'api_platform.action.get_item', DummyEntity::class, 'get', ['GET'], false, ['id' => '\d+']),
-            $routeCollection->get('api_dummies_get_item')
-        );
+        $routeCollection = $this->getApiLoaderWithResourceMetadata($createResourceMetadata())->load(null);
 
-        $this->assertEquals(
-            $this->getRoute('/dummies/{id}.{_format}', 'api_platform.action.delete_item', DummyEntity::class, 'delete', ['DELETE']),
-            $routeCollection->get('api_dummies_delete_item')
-        );
+        $testIt = function() use ($routeCollection) {
+            $this->assertEquals(
+                $this->getRoute('/dummies/{id}.{_format}', 'api_platform.action.get_item', DummyEntity::class, 'get', /** $methods*/['GET'], /** $isCollection */false, ['id' => '\d+']),
+                $routeCollection->get('api_dummies_get_item')
+            );
 
-        $this->assertEquals(
-            $this->getRoute('/dummies/{id}.{_format}', 'api_platform.action.put_item', DummyEntity::class, 'put', ['PUT']),
-            $routeCollection->get('api_dummies_put_item')
-        );
+            $this->assertEquals(
+                $this->getRoute('/dummies/{id}.{_format}', 'api_platform.action.delete_item', DummyEntity::class, 'delete', /** $methods */['DELETE']),
+                $routeCollection->get('api_dummies_delete_item')
+            );
 
-        $this->assertEquals(
-            $this->getRoute('/dummies.{_format}', 'some.service.name', DummyEntity::class, 'my_op', ['GET'], true, ['_format' => 'a valid format']),
-            $routeCollection->get('api_dummies_my_op_collection')
-        );
+            $this->assertEquals(
+                $this->getRoute('/dummies/{id}.{_format}', 'api_platform.action.put_item', DummyEntity::class, 'put', ['PUT']),
+                $routeCollection->get('api_dummies_put_item')
+            );
 
-        $this->assertEquals(
-            $this->getRoute('/dummies.{_format}', 'api_platform.action.post_collection', DummyEntity::class, 'my_second_op', ['POST'], true),
-            $routeCollection->get('api_dummies_my_second_op_collection')
-        );
+            $this->assertEquals(
+                $this->getRoute('/dummies.{_format}', 'some.service.name', DummyEntity::class, 'my_op', ['GET'], true, ['_format' => 'a valid format']),
+                $routeCollection->get('api_dummies_my_op_collection')
+            );
 
-        $this->assertEquals(
-            $this->getRoute('/some/custom/path', 'api_platform.action.get_collection', DummyEntity::class, 'my_path_op', ['GET'], true),
-            $routeCollection->get('api_dummies_my_path_op_collection')
-        );
+            $this->assertEquals(
+                $this->getRoute('/dummies.{_format}', 'api_platform.action.post_collection', DummyEntity::class, 'my_second_op', ['POST'], true),
+                $routeCollection->get('api_dummies_my_second_op_collection')
+            );
 
-        $this->assertEquals(
-            $this->getSubresourceRoute('/dummies/{id}/subresources.{_format}', 'api_platform.action.get_subresource', RelatedDummyEntity::class, 'api_dummies_subresources_get_subresource', ['property' => 'subresource', 'identifiers' => [['id', DummyEntity::class, true]], 'collection' => true, 'operationId' => 'api_dummies_subresources_get_subresource']),
-            $routeCollection->get('api_dummies_subresources_get_subresource')
-        );
+            $this->assertEquals(
+                $this->getRoute('/some/custom/path', 'api_platform.action.get_collection', DummyEntity::class, 'my_path_op', ['GET'], true),
+                $routeCollection->get('api_dummies_my_path_op_collection')
+            );
+
+            $this->assertEquals(
+                $this->getSubresourceRoute('/dummies/{id}/subresources.{_format}', 'api_platform.action.get_subresource', RelatedDummyEntity::class, 'api_dummies_subresources_get_subresource', ['property' => 'subresource', 'identifiers' => [['id', DummyEntity::class, true]], 'collection' => true, 'operationId' => 'api_dummies_subresources_get_subresource']),
+                $routeCollection->get('api_dummies_subresources_get_subresource')
+            );
+        };
+        $testIt();
+
     }
 
     /**
@@ -192,71 +200,95 @@ class ApiLoaderTest extends \PHPUnit_Framework_TestCase
 
     private function getApiLoaderWithResourceMetadata(ResourceMetadata $resourceMetadata, $recursiveSubresource = false): ApiLoader
     {
-        $routingConfig = __DIR__.'/../../../../src/Bridge/Symfony/Bundle/Resources/config/routing';
+        $createKernel = function() {
+            $routingConfig = __DIR__.'/../../../../src/Bridge/Symfony/Bundle/Resources/config/routing';
 
-        $kernelProphecy = $this->prophesize(KernelInterface::class);
-        $kernelProphecy->locateResource(Argument::any())->willReturn($routingConfig);
-        $possibleArguments = [
-            'api_platform.action.get_collection',
-            'api_platform.action.post_collection',
-            'api_platform.action.get_item',
-            'api_platform.action.put_item',
-            'api_platform.action.delete_item',
-        ];
-        $containerProphecy = $this->prophesize(ContainerInterface::class);
+            $kernelProphecy = $this->prophesize(KernelInterface::class);
+            $kernelProphecy->locateResource(Argument::any())->willReturn($routingConfig);
 
-        foreach ($possibleArguments as $possibleArgument) {
-            $containerProphecy->has($possibleArgument)->willReturn(true);
-        }
-        $containerProphecy->getParameter('api_platform.enable_swagger')->willReturn(true);
+            return $kernelProphecy->reveal();
+        };
 
-        $containerProphecy->has(Argument::type('string'))->willReturn(false);
+        $createContainer = function() {
+            $possibleArguments = [
+                'api_platform.action.get_collection',
+                'api_platform.action.post_collection',
+                'api_platform.action.get_item',
+                'api_platform.action.put_item',
+                'api_platform.action.delete_item',
+            ];
+            $containerProphecy = $this->prophesize(ContainerInterface::class);
 
-        $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
-        $resourceMetadataFactoryProphecy->create(DummyEntity::class)->willReturn($resourceMetadata);
-        $resourceMetadataFactoryProphecy->create(RelatedDummyEntity::class)->willReturn((new ResourceMetadata())->withShortName('related_dummies'));
+            foreach ($possibleArguments as $possibleArgument) {
+                $containerProphecy->has($possibleArgument)->willReturn(true);
+            }
+            $containerProphecy->getParameter('api_platform.enable_swagger')->willReturn(true);
 
-        $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
-        $resourceNameCollectionFactoryProphecy->create()->willReturn(new ResourceNameCollection([DummyEntity::class, RelatedDummyEntity::class]));
+            $containerProphecy->has(Argument::type('string'))->willReturn(false);
 
-        $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
-        $propertyNameCollectionFactoryProphecy->create(DummyEntity::class)->willReturn(new PropertyNameCollection(['id', 'subresource']));
-        $propertyNameCollectionFactoryProphecy->create(RelatedDummyEntity::class)->willReturn(new PropertyNameCollection(['id', 'recursivesubresource', 'secondrecursivesubresource']));
+            return $containerProphecy->reveal();
+        };
 
-        $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
-        $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'id')->willReturn(new PropertyMetadata());
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'id')->willReturn(new PropertyMetadata());
+        $createResourceMetadataFactory = function() use ($resourceMetadata) {
+            $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
+            $resourceMetadataFactoryProphecy->create(DummyEntity::class)->willReturn($resourceMetadata);
+            $resourceMetadataFactoryProphecy->create(RelatedDummyEntity::class)->willReturn((new ResourceMetadata())->withShortName('related_dummies'));
+            return $resourceMetadataFactoryProphecy->reveal();
+        };
+        $resourceMetadataFactory = $createResourceMetadataFactory();
 
-        $relatedType = new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummyEntity::class);
+        $createResourceNameCollectionFactory = function() {
+            $resourceNameCollectionFactoryProphecy = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
+            $resourceNameCollectionFactoryProphecy->create()->willReturn(new ResourceNameCollection([DummyEntity::class, RelatedDummyEntity::class]));
 
-        $subResourcePropertyMetadata = (new PropertyMetadata())
-                                        ->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class, true))
-                                        ->withType(new Type(Type::BUILTIN_TYPE_ARRAY, false, \ArrayObject::class, true, null, $relatedType));
+            return $resourceNameCollectionFactoryProphecy->reveal();
+        };
 
-        if (false === $recursiveSubresource) {
-            $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'recursivesubresource')->willReturn(new PropertyMetadata());
-            $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'secondrecursivesubresource')->willReturn(new PropertyMetadata());
-        } else {
-            $dummyType = new Type(Type::BUILTIN_TYPE_OBJECT, false, DummyEntity::class);
-            $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'recursivesubresource')
-                ->willReturn((new PropertyMetadata())
-                ->withSubresource(new SubresourceMetadata(DummyEntity::class, false))
-                ->withType($dummyType));
-            $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'secondrecursivesubresource')
-                ->willReturn((new PropertyMetadata())
-                ->withSubresource(new SubresourceMetadata(DummyEntity::class, false))
-                ->withType($dummyType));
-        }
+        $createPropertyNameCollectionFactory = function() {
+            $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
+            $propertyNameCollectionFactoryProphecy->create(DummyEntity::class)->willReturn(new PropertyNameCollection(['id', 'subresource']));
+            $propertyNameCollectionFactoryProphecy->create(RelatedDummyEntity::class)->willReturn(new PropertyNameCollection(['id', 'recursivesubresource', 'secondrecursivesubresource']));
 
-        $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'subresource')->willReturn($subResourcePropertyMetadata);
+            return $propertyNameCollectionFactoryProphecy->reveal();
+        };
+        $propertyNameCollectionFactory = $createPropertyNameCollectionFactory();
+
+        $createPropertyMetadataFactory = function() use ($recursiveSubresource) {
+            $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
+            $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'id')->willReturn(new PropertyMetadata());
+            $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'id')->willReturn(new PropertyMetadata());
+
+            $relatedType = new Type(Type::BUILTIN_TYPE_OBJECT, false, RelatedDummyEntity::class);
+
+            $subResourcePropertyMetadata = (new PropertyMetadata())
+                ->withSubresource(new SubresourceMetadata(RelatedDummyEntity::class, true))
+                ->withType(new Type(Type::BUILTIN_TYPE_ARRAY, false, \ArrayObject::class, true, null, $relatedType));
+
+            if (false === $recursiveSubresource) {
+                $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'recursivesubresource')->willReturn(new PropertyMetadata());
+                $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'secondrecursivesubresource')->willReturn(new PropertyMetadata());
+            } else {
+                $dummyType = new Type(Type::BUILTIN_TYPE_OBJECT, false, DummyEntity::class);
+                $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'recursivesubresource')
+                    ->willReturn((new PropertyMetadata())
+                        ->withSubresource(new SubresourceMetadata(DummyEntity::class, false))
+                        ->withType($dummyType));
+                $propertyMetadataFactoryProphecy->create(RelatedDummyEntity::class, 'secondrecursivesubresource')
+                    ->willReturn((new PropertyMetadata())
+                        ->withSubresource(new SubresourceMetadata(DummyEntity::class, false))
+                        ->withType($dummyType));
+            }
+
+            $propertyMetadataFactoryProphecy->create(DummyEntity::class, 'subresource')->willReturn($subResourcePropertyMetadata);
+
+            return $propertyMetadataFactoryProphecy->reveal();
+        };
 
         $operationPathResolver = new CustomOperationPathResolver(new OperationPathResolver(new UnderscorePathSegmentNameGenerator()));
 
-        $resourceMetadataFactory = $resourceMetadataFactoryProphecy->reveal();
+        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactory, $propertyNameCollectionFactory, $createPropertyMetadataFactory(), new UnderscorePathSegmentNameGenerator());
 
-        $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactory, $propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), new UnderscorePathSegmentNameGenerator());
-
-        $apiLoader = new ApiLoader($kernelProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactory, $operationPathResolver, $containerProphecy->reveal(), ['jsonld' => ['application/ld+json']], [], $subresourceOperationFactory);
+        $apiLoader = new ApiLoader($createKernel(), $createResourceNameCollectionFactory(), $resourceMetadataFactory, $operationPathResolver, $createContainer(), /** $formats */['jsonld' => ['application/ld+json']], /** $resourceClassDirectories */[], $subresourceOperationFactory);
 
         return $apiLoader;
     }
@@ -272,9 +304,9 @@ class ApiLoaderTest extends \PHPUnit_Framework_TestCase
                 sprintf('_api_%s_operation_name', $collection ? 'collection' : 'item') => $operationName,
             ],
             $requirements,
-            [],
-            '',
-            [],
+            /** $options */[],
+            /** $hosts */'',
+            /** $schemes */[],
             $methods
         );
     }

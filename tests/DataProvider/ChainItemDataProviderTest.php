@@ -30,18 +30,30 @@ class ChainItemDataProviderTest extends \PHPUnit_Framework_TestCase
         $dummy = new Dummy();
         $dummy->setName('Lucie');
 
-        $firstDataProvider = $this->prophesize(ItemDataProviderInterface::class);
-        $firstDataProvider->getItem(Dummy::class, 1, null, [])->willThrow(ResourceClassNotSupportedException::class);
+        $createFirstDataProvider = function() {
+            $firstDataProvider = $this->prophesize(ItemDataProviderInterface::class);
+            $firstDataProvider->getItem(Dummy::class, 1, null, [])->willThrow(ResourceClassNotSupportedException::class);
 
-        $secondDataProvider = $this->prophesize(ItemDataProviderInterface::class);
-        $secondDataProvider->getItem(Dummy::class, 1, null, [])->willReturn($dummy);
+            return $firstDataProvider->reveal();
+        };
 
-        $thirdDataProvider = $this->prophesize(ItemDataProviderInterface::class);
-        $thirdDataProvider->getItem(Dummy::class, 1, null, [])->willReturn(new \stdClass());
+        $createSecondDataProvider = function() use ($dummy) {
+            $secondDataProvider = $this->prophesize(ItemDataProviderInterface::class);
+            $secondDataProvider->getItem(Dummy::class, 1, null, [])->willReturn($dummy);
 
-        $chainItemDataProvider = new ChainItemDataProvider([$firstDataProvider->reveal(), $secondDataProvider->reveal(), $thirdDataProvider->reveal()]);
+            return $secondDataProvider->reveal();
+        };
 
-        $this->assertEquals($dummy, $chainItemDataProvider->getItem(Dummy::class, 1));
+        $createThirdPartyProvider = function() {
+            $thirdDataProvider = $this->prophesize(ItemDataProviderInterface::class);
+            $thirdDataProvider->getItem(Dummy::class, 1, null, [])->willReturn(new \stdClass());
+
+            return $thirdDataProvider->reveal();
+        };
+
+        $chainItemDataProvider = new ChainItemDataProvider([$createFirstDataProvider(), $createSecondDataProvider(), $createThirdPartyProvider()]);
+
+        $this->assertEquals($dummy, $chainItemDataProvider->getItem(Dummy::class, /** $id */1));
     }
 
     public function testGetItemExeptions()

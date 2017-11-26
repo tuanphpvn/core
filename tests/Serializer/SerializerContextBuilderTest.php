@@ -31,11 +31,11 @@ class SerializerContextBuilderTest extends \PHPUnit_Framework_TestCase
     protected function setUp()
     {
         $resourceMetadata = new ResourceMetadata(
-            null,
-            null,
-            null,
-            [],
-            [],
+            /** $shortName */null,
+            /** $description */null,
+            /** $iri */null,
+            /** $itemOperations */[],
+            /** $collectionOperations */[],
             ['normalization_context' => ['foo' => 'bar'], 'denormalization_context' => ['bar' => 'baz']]
         );
 

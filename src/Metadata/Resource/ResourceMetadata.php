@@ -198,6 +198,10 @@ final class ResourceMetadata
      * @param array|null  $operations
      * @param string|null $operationName
      * @param string      $key
+     * @example
+     * <code>
+     *  denormalization_context
+     * </code>
      * @param mixed       $defaultValue
      * @param bool        $resourceFallback
      *

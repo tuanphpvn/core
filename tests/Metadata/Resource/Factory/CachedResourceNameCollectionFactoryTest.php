@@ -28,16 +28,21 @@ class CachedResourceNameCollectionFactoryTest extends \PHPUnit_Framework_TestCas
 {
     public function testCreateWithItemHit()
     {
-        $cacheItem = $this->prophesize(CacheItemInterface::class);
-        $cacheItem->isHit()->willReturn(true)->shouldBeCalled();
-        $cacheItem->get()->willReturn(new ResourceNameCollection([Dummy::class]))->shouldBeCalled();
+        $createItemPool = function() {
+            $cacheItem = $this->prophesize(CacheItemInterface::class);
+            $cacheItem->isHit()->willReturn(true)->shouldBeCalled();
+            $cacheItem->get()->willReturn(new ResourceNameCollection([Dummy::class]))->shouldBeCalled();
 
-        $cacheItemPool = $this->prophesize(CacheItemPoolInterface::class);
-        $cacheItemPool->getItem(CachedResourceNameCollectionFactory::CACHE_KEY)->willReturn($cacheItem->reveal())->shouldBeCalled();
+            $cacheItemPool = $this->prophesize(CacheItemPoolInterface::class);
+            $cacheItemPool->getItem(CachedResourceNameCollectionFactory::CACHE_KEY)->willReturn($cacheItem->reveal())->shouldBeCalled();
+
+            return $cacheItemPool->reveal();
+        };
+        $cacheItemPool = $createItemPool();
 
         $decoratedResourceNameCollectionFactory = $this->prophesize(ResourceNameCollectionFactoryInterface::class);
 
-        $cachedResourceNameCollectionFactory = new CachedResourceNameCollectionFactory($cacheItemPool->reveal(), $decoratedResourceNameCollectionFactory->reveal());
+        $cachedResourceNameCollectionFactory = new CachedResourceNameCollectionFactory($cacheItemPool, $decoratedResourceNameCollectionFactory->reveal());
         $resultedResourceNameCollection = $cachedResourceNameCollectionFactory->create();
 
         $this->assertInstanceOf(ResourceNameCollection::class, $resultedResourceNameCollection);

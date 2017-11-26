@@ -29,15 +29,23 @@ class RouterOperationPathResolverTest extends \PHPUnit_Framework_TestCase
 {
     public function testResolveOperationPath()
     {
-        $routeCollection = new RouteCollection();
-        $routeCollection->add('foos', new Route('/foos'));
+        $createRoute = function() {
+            $routeCollection = new RouteCollection();
+            $routeCollection->add('foos', new Route('/foos'));
 
-        $routerProphecy = $this->prophesize(RouterInterface::class);
-        $routerProphecy->getRouteCollection()->willReturn($routeCollection)->shouldBeCalled();
+            $routerProphecy = $this->prophesize(RouterInterface::class);
+            $routerProphecy->getRouteCollection()->willReturn($routeCollection)->shouldBeCalled();
 
-        $operationPathResolver = new RouterOperationPathResolver($routerProphecy->reveal(), $this->prophesize(OperationPathResolverInterface::class)->reveal());
+            return $routerProphecy->reveal();
+        };
 
-        $this->assertEquals('/foos', $operationPathResolver->resolveOperationPath('Foo', ['route_name' => 'foos'], OperationType::COLLECTION, 'get'));
+        $createOperationPathResolver = function() {
+            return $this->prophesize(OperationPathResolverInterface::class)->reveal();
+        };
+
+        $operationPathResolver = new RouterOperationPathResolver($createRoute(), $createOperationPathResolver());
+
+        $this->assertEquals('/foos', $operationPathResolver->resolveOperationPath(/** $resourceShortName */'Foo', /** $operation */['route_name' => 'foos'], /** $operationType */OperationType::COLLECTION, 'get'));
     }
 
     /**
